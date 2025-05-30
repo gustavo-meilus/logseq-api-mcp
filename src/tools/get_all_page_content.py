@@ -44,22 +44,48 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
         return preview[:max_length] + "..." if len(preview) > max_length else preview
 
     def format_essential_properties(props):
-        """Format only essential properties without emojis"""
+        """Format essential properties based on common patterns rather than language-specific keys"""
         if not props:
             return []
 
-        # Only the most important properties
-        essential_keys = ["curso", "professor", "data"]
         formatted = []
 
-        for key in essential_keys:
-            if key in props and props[key]:
-                value = props[key]
-                if isinstance(value, list):
-                    value = ", ".join(str(v) for v in value)
-                formatted.append(f"{key}: {value}")
+        # Look for common property patterns (language-agnostic)
+        for key, value in props.items():
+            if not value:
+                continue
 
-        return formatted
+            # Convert to string if it's a list
+            if isinstance(value, list):
+                value_str = ", ".join(str(v) for v in value)
+            else:
+                value_str = str(value)
+
+            # Only show non-empty, meaningful properties
+            # Skip only technical/system properties that clutter the display
+            if (
+                key
+                not in [
+                    "collapsed",
+                    "card-last-interval",
+                    "card-repeats",
+                    "card-ease-factor",
+                    "card-next-schedule",
+                    "card-last-reviewed",
+                    "card-last-score",
+                    "id",
+                    "uuid",
+                    "created-at",
+                    "updated-at",
+                ]
+                and len(value_str.strip()) > 0
+                and value_str.strip() != "nil"
+                and value_str.strip() != "null"
+            ):
+                formatted.append(f"{key}: {value_str}")
+
+        # Show more properties to be inclusive - increase limit
+        return formatted[:8]
 
     def format_flashcard_content(content):
         """Format flashcard content as clean Q&A"""
@@ -93,23 +119,36 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
         content = block.get("content", "").strip()
         properties = block.get("properties", {})
 
-        # Choose emoji based on content type
+        # Choose emoji based on content type and structure
         if indent_level == 0:
             emoji = "📄"
         elif content.startswith("#"):
-            if any(word in content.lower() for word in ["tópicos", "topics"]):
+            # Detect content type by structure and common patterns
+            content_lower = content.lower()
+            if any(
+                word in content_lower
+                for word in ["topics", "table of contents", "index"]
+            ):
                 emoji = "📚"
-            elif any(word in content.lower() for word in ["anotações", "notes"]):
+            elif any(
+                word in content_lower
+                for word in ["notes", "annotations", "observations"]
+            ):
                 emoji = "📝"
-            elif "flashcards" in content.lower():
+            elif any(word in content_lower for word in ["flashcards", "cards", "quiz"]):
                 emoji = "🎯"
-            elif any(word in content.lower() for word in ["resumo", "summary"]):
+            elif any(
+                word in content_lower for word in ["summary", "overview", "abstract"]
+            ):
                 emoji = "📋"
-            elif "implementando" in content.lower():
+            elif any(
+                word in content_lower
+                for word in ["implementation", "code", "development"]
+            ):
                 emoji = "⚙️"
             elif any(
-                word in content.lower()
-                for word in ["services", "entities", "value objects"]
+                word in content_lower
+                for word in ["services", "entities", "value objects", "architecture"]
             ):
                 emoji = "🔧"
             else:
@@ -121,7 +160,7 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
         else:
             emoji = "•"
 
-        # Block title and content handling
+        # Block title and content handling - ALWAYS process every block
         if content:
             if "#card" in content:
                 # Special handling for flashcards
@@ -143,13 +182,13 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
 
                 lines.append(f"{indent}{emoji} **{title}** [{block_id}]")
 
-                # Show essential properties only for top-level blocks
+                # Show essential properties for top-level blocks (always include if present)
                 if properties and indent_level == 0:
                     essential_props = format_essential_properties(properties)
                     if essential_props:
                         lines.append(f"{indent}   📋 {' | '.join(essential_props)}")
 
-                # Expanded content handling for technical material
+                # Expanded content handling - ALWAYS show content when substantial
                 if not content.startswith("#") and len(content) > 100:  # Not a header
                     # Special handling for code blocks - preserve fully
                     if "```" in content:
@@ -168,6 +207,7 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
                     else:
                         lines.append(f"{indent}   📄 {content}")
         else:
+            # ALWAYS show empty blocks too - they may be structurally important
             lines.append(f"{indent}{emoji} [Empty block] [{block_id}]")
 
         # Enhanced children handling - show much more content
@@ -265,7 +305,7 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
             for block in blocks:
                 output_lines.extend(format_block_with_content(block, 0, max_depth=6))
 
-            # Add linked references with cleaner format
+            # Add linked references with cleaner format - ALWAYS process all references
             if links:
                 output_lines.extend(["🔗 **LINKED REFERENCES:**", ""])
 
@@ -278,25 +318,48 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
                                 link_group[1:] if len(link_group) > 1 else []
                             )
 
-                            # Page type emoji
+                            # Page type emoji based on content patterns - default to 📖 if no match
+                            name_lower = name.lower()
+                            emoji = "📖"  # Default emoji for all pages
+
+                            # Try to detect specific patterns, but always use default if no match
                             if any(
-                                month in name
-                                for month in ["jan", "feb", "mar", "apr", "may", "jun"]
+                                month in name_lower
+                                for month in [
+                                    "jan",
+                                    "feb",
+                                    "mar",
+                                    "apr",
+                                    "may",
+                                    "jun",
+                                    "jul",
+                                    "aug",
+                                    "sep",
+                                    "oct",
+                                    "nov",
+                                    "dec",
+                                ]
                             ):
                                 emoji = "📅"
                             elif any(
-                                word in name.lower()
-                                for word in ["aula", "curso", "class"]
+                                word in name_lower
+                                for word in [
+                                    "class",
+                                    "lesson",
+                                    "course",
+                                    "lecture",
+                                    "tutorial",
+                                ]
                             ):
                                 emoji = "🎓"
-                            else:
-                                emoji = "📖"
+                            # else: keep default 📖
 
+                            # ALWAYS display the reference, regardless of pattern matching
                             output_lines.append(
                                 f"{emoji} **{name}** ({len(content_blocks)} refs)"
                             )
 
-                            # Show meaningful content previews
+                            # Show meaningful content previews - ALWAYS process all content blocks
                             for j, block in enumerate(
                                 content_blocks[:3]
                             ):  # Max 3 per source
@@ -321,6 +384,11 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
                                             )
                                             output_lines.append(
                                                 f"   {ref_emoji} {preview}"
+                                            )
+                                        # ALWAYS show something, even if just a placeholder
+                                        else:
+                                            output_lines.append(
+                                                "   • [Referenced content]"
                                             )
 
                             if len(content_blocks) > 3:

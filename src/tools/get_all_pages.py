@@ -12,99 +12,40 @@ load_dotenv(env_path)
 
 async def get_all_pages() -> List[TextContent]:
     """
-    Get a comprehensive list of all pages in the Logseq graph with key metadata.
+    Get a simple list of all pages in the Logseq graph with essential metadata.
 
-    Returns formatted data optimized for LLM consumption with categorization,
-    essential properties, and organized structure.
+    Returns a clean listing optimized for LLM consumption with key identifiers
+    and timestamps for each page.
     """
     endpoint = os.getenv("LOGSEQ_API_ENDPOINT", "http://127.0.0.1:12315/api")
     token = os.getenv("LOGSEQ_API_TOKEN", "auth")
 
     headers = {"Authorization": f"Bearer {token}"}
 
-    def categorize_page(page):
-        """Categorize pages based on journal vs regular content"""
-        # Journal pages (date-based)
-        if page.get("journal?", False):
-            return "📅 Journal"
+    def format_timestamp(timestamp):
+        """Convert timestamp to readable format"""
+        if not timestamp:
+            return "N/A"
+        try:
+            from datetime import datetime
 
-        return "📄 Pages"
+            dt = datetime.fromtimestamp(timestamp / 1000)  # Convert from ms
+            return dt.strftime("%Y-%m-%d %H:%M:%S")
+        except (ValueError, TypeError, OverflowError):
+            return str(timestamp)
 
-    def format_essential_properties(props):
-        """Extract and format only the most important properties"""
-        if not props:
-            return []
-
-        essential = []
-
-        # Educational properties
-        if "curso" in props:
-            curso = props["curso"]
-            if isinstance(curso, list):
-                curso = ", ".join(str(c) for c in curso)
-            essential.append(f"📚 {curso}")
-
-        if "professor" in props:
-            prof = props["professor"]
-            if isinstance(prof, list):
-                prof = ", ".join(str(p) for p in prof)
-            essential.append(f"👨‍🏫 {prof}")
-
-        if "data" in props:
-            data = props["data"]
-            if isinstance(data, list):
-                data = ", ".join(str(d) for d in data)
-            essential.append(f"📅 {data}")
-
-        if "tipo" in props:
-            tipo = props["tipo"]
-            if isinstance(tipo, list):
-                tipo = ", ".join(str(t) for t in tipo)
-            essential.append(f"🏷️ {tipo}")
-
-        # Technical properties
-        if "tecnologias" in props:
-            tech = props["tecnologias"]
-            if isinstance(tech, list) and tech:
-                tech_str = ", ".join(str(t) for t in tech)
-                essential.append(f"⚙️ {tech_str}")
-
-        return essential
-
-    def format_page_entry(page, show_details=True):
-        """Format a single page entry with essential information"""
-        name = page.get("name", "Unknown")
-        original_name = page.get("originalName", name)
+    def format_page_entry(page):
+        """Format a single page entry with essential metadata"""
         page_id = page.get("id", "N/A")
+        uuid = page.get("uuid", "N/A")
+        original_name = page.get("originalName", page.get("name", "Unknown"))
+        created_at = format_timestamp(page.get("createdAt"))
+        updated_at = format_timestamp(page.get("updatedAt"))
 
-        # Basic info line
-        display_name = original_name if original_name != name else name
-        lines = [f"📄 **{display_name}** [ID: {page_id}]"]
+        # Determine page type
+        page_type = "📅 Journal" if page.get("journal?", False) else "📄 Page"
 
-        if show_details:
-            # Essential properties
-            properties = page.get("properties", {})
-            essential_props = format_essential_properties(properties)
-            if essential_props:
-                lines.append(f"   {' | '.join(essential_props)}")
-
-            # Additional metadata
-            metadata = []
-            if page.get("journal?", False):
-                metadata.append("📅 Journal")
-
-            created_at = page.get("createdAt")
-            updated_at = page.get("updatedAt")
-            if updated_at and created_at and updated_at != created_at:
-                metadata.append("✏️ Modified")
-
-            if page.get("file"):
-                metadata.append("📁 Has file")
-
-            if metadata:
-                lines.append(f"   {' | '.join(metadata)}")
-
-        return lines
+        return f"{page_type} **{original_name}** | ID: {page_id} | UUID: {uuid} | Created: {created_at} | Updated: {updated_at}"
 
     async with aiohttp.ClientSession() as session:
         try:
@@ -130,68 +71,39 @@ async def get_all_pages() -> List[TextContent]:
                         )
                     ]
 
-            # Categorize and organize pages
-            categorized_pages = {}
-            for page in pages:
-                category = categorize_page(page)
-                if category not in categorized_pages:
-                    categorized_pages[category] = []
-                categorized_pages[category].append(page)
+            # Sort pages alphabetically by name
+            sorted_pages = sorted(
+                pages, key=lambda p: p.get("originalName", p.get("name", "")).lower()
+            )
 
-            # Build output
+            # Separate journal and regular pages
+            journal_pages = [p for p in sorted_pages if p.get("journal?", False)]
+            regular_pages = [p for p in sorted_pages if not p.get("journal?", False)]
+
+            # Build simple output with clear distinction between Journal and Regular pages
             output_lines = [
-                "📊 **LOGSEQ GRAPH OVERVIEW**",
+                "📊 **LOGSEQ PAGES LISTING**",
                 f"📈 Total pages: {len(pages)}",
-                f"📅 Journal pages: {len([p for p in pages if p.get('journal?', False)])}",
-                f"📄 Regular pages: {len([p for p in pages if not p.get('journal?', False)])}",
+                f"📅 Journal pages: {len(journal_pages)}",
+                f"📄 Regular pages: {len(regular_pages)}",
                 "",
             ]
 
-            # Detailed breakdown by category
-            output_lines.append("📚 **DETAILED BREAKDOWN:**")
-            output_lines.append("")
-
-            for category, category_pages in sorted(categorized_pages.items()):
-                output_lines.append(f"## {category} ({len(category_pages)} pages)")
-                output_lines.append("")
-
-                # Sort pages by name for better organization
-                sorted_pages = sorted(
-                    category_pages,
-                    key=lambda p: p.get("originalName", p.get("name", "")),
-                )
-
-                # Show all pages for smaller categories, limit for larger ones
-                display_pages = sorted_pages
-                truncated = False
-
-                if len(sorted_pages) > 50:
-                    display_pages = sorted_pages[:25]
-                    truncated = True
-
-                for page in display_pages:
-                    page_lines = format_page_entry(page, show_details=True)
-                    output_lines.extend(page_lines)
-                    output_lines.append("")
-
-                if truncated:
-                    remaining = len(sorted_pages) - len(display_pages)
+            # Add regular pages section
+            if regular_pages:
+                output_lines.extend(["📄 **REGULAR PAGES:**", ""])
+                for page in regular_pages:
                     output_lines.append(
-                        f"... and {remaining} more pages in this category"
+                        format_page_entry(page).replace("📄 Page", "📄")
                     )
-                    output_lines.append("")
 
-            # Quick reference index
-            output_lines.extend(["🔍 **QUICK REFERENCE INDEX:**", ""])
-
-            all_pages_sorted = sorted(
-                pages, key=lambda p: p.get("originalName", p.get("name", ""))
-            )
-            for page in all_pages_sorted:
-                name = page.get("originalName", page.get("name", "Unknown"))
-                page_id = page.get("id", "N/A")
-                emoji = "📅" if page.get("journal?", False) else "📄"
-                output_lines.append(f"{emoji} {name} [ID: {page_id}]")
+            # Add journal pages section
+            if journal_pages:
+                output_lines.extend(["", "📅 **JOURNAL PAGES:**", ""])
+                for page in journal_pages:
+                    output_lines.append(
+                        format_page_entry(page).replace("📅 Journal", "📅")
+                    )
 
             return [TextContent(type="text", text="\n".join(output_lines))]
 
