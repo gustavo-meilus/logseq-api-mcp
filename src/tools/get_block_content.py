@@ -127,38 +127,48 @@ async def get_block_content(block_uuid: str) -> List[TextContent]:
         ]
 
         if not is_child:
-            lines.extend([
-                "📄 **PAGE CONTEXT:**",
-                f"• Page: {page_name} (ID: {page_id})",
-                f"• Parent Block ID: {parent_id}",
-                "",
-            ])
+            lines.extend(
+                [
+                    "📄 **PAGE CONTEXT:**",
+                    f"• Page: {page_name} (ID: {page_id})",
+                    f"• Parent Block ID: {parent_id}",
+                    "",
+                ]
+            )
 
-        lines.extend([
-            "⚙️ **PROPERTIES:**",
-            format_properties(properties),
-            "",
-            "📝 **CONTENT:**",
-            format_content_display(content, "🔸" if is_child else ""),
-            "",
-        ])
+        lines.extend(
+            [
+                "⚙️ **PROPERTIES:**",
+                format_properties(properties),
+                "",
+                "📝 **CONTENT:**",
+                format_content_display(content, "🔸" if is_child else ""),
+                "",
+            ]
+        )
 
         if not is_child:
-            lines.extend([
-                "👶 **IMMEDIATE CHILDREN:**",
-                f"Count: {len(children)}",
-                format_children_summary(children) if children else "No child blocks",
-                "",
-            ])
+            lines.extend(
+                [
+                    "👶 **IMMEDIATE CHILDREN:**",
+                    f"Count: {len(children)}",
+                    format_children_summary(children)
+                    if children
+                    else "No child blocks",
+                    "",
+                ]
+            )
 
-        lines.extend([
-            "📊 **TECHNICAL SUMMARY:**",
-            f"• Block Type: {'Header' if content.startswith('#') else 'Flashcard' if '#card' in content else 'Code' if content.startswith('```') else 'Text'}",
-            f"• Has Properties: {'Yes' if properties else 'No'}",
-            f"• Has Children: {'Yes' if children else 'No'}",
-            f"• Content Length: {len(content)} characters",
-            "",
-        ])
+        lines.extend(
+            [
+                "📊 **TECHNICAL SUMMARY:**",
+                f"• Block Type: {'Header' if content.startswith('#') else 'Flashcard' if '#card' in content else 'Code' if content.startswith('```') else 'Text'}",
+                f"• Has Properties: {'Yes' if properties else 'No'}",
+                f"• Has Children: {'Yes' if children else 'No'}",
+                f"• Content Length: {len(content)} characters",
+                "",
+            ]
+        )
 
         return lines
 
@@ -180,16 +190,22 @@ async def get_block_content(block_uuid: str) -> List[TextContent]:
             # Get immediate children blocks
             children = main_block.get("children", [])
             if children:
-                output_lines.extend([
-                    "=" * 60,
-                    "🌳 **IMMEDIATE CHILDREN DETAILS:**",
-                    "",
-                ])
+                output_lines.extend(
+                    [
+                        "=" * 60,
+                        "🌳 **IMMEDIATE CHILDREN DETAILS:**",
+                        "",
+                    ]
+                )
 
                 for i, child in enumerate(children, 1):
                     # Extract UUID from child reference
                     child_uuid = None
-                    if isinstance(child, list) and len(child) >= 2 and child[0] == "uuid":
+                    if (
+                        isinstance(child, list)
+                        and len(child) >= 2
+                        and child[0] == "uuid"
+                    ):
                         child_uuid = child[1]
                     elif isinstance(child, dict):
                         child_uuid = child.get("uuid")
@@ -197,24 +213,32 @@ async def get_block_content(block_uuid: str) -> List[TextContent]:
                     if child_uuid:
                         child_block = await get_block_by_uuid(session, child_uuid)
                         if child_block:
-                            output_lines.extend([
-                                f"🔸 **CHILD {i}:**",
-                                "",
-                            ])
-                            output_lines.extend(format_block_details(child_block, is_child=True))
+                            output_lines.extend(
+                                [
+                                    f"🔸 **CHILD {i}:**",
+                                    "",
+                                ]
+                            )
+                            output_lines.extend(
+                                format_block_details(child_block, is_child=True)
+                            )
                             output_lines.append("-" * 40)
                         else:
-                            output_lines.extend([
-                                f"🔸 **CHILD {i}:**",
-                                f"❌ Could not fetch child block with UUID: {child_uuid}",
-                                "-" * 40,
-                            ])
+                            output_lines.extend(
+                                [
+                                    f"🔸 **CHILD {i}:**",
+                                    f"❌ Could not fetch child block with UUID: {child_uuid}",
+                                    "-" * 40,
+                                ]
+                            )
                     else:
-                        output_lines.extend([
-                            f"🔸 **CHILD {i}:**",
-                            f"❌ Invalid child reference: {child}",
-                            "-" * 40,
-                        ])
+                        output_lines.extend(
+                            [
+                                f"🔸 **CHILD {i}:**",
+                                f"❌ Invalid child reference: {child}",
+                                "-" * 40,
+                            ]
+                        )
 
             return [TextContent(type="text", text="\n".join(output_lines))]
 

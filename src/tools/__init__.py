@@ -4,6 +4,7 @@ from .get_all_pages import get_all_pages
 from .get_page_blocks import get_page_blocks
 from .get_block_content import get_block_content
 from .get_page_links import get_page_links
+from .get_linked_flashcards import get_linked_flashcards
 
 # Export only working functions
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "get_page_blocks",
     "get_block_content",
     "get_page_links",
+    "get_linked_flashcards",
 ]
