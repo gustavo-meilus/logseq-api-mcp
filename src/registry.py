@@ -3,6 +3,7 @@ from tools import get_all_page_content
 from tools import get_all_pages
 from tools import get_page_blocks
 from tools import get_block_content
+from tools import get_page_links
 
 
 def register_all_tools(mcp_server: FastMCP) -> None:
@@ -18,3 +19,4 @@ def register_all_tools(mcp_server: FastMCP) -> None:
     mcp_server.tool()(get_all_pages)
     mcp_server.tool()(get_page_blocks)
     mcp_server.tool()(get_block_content)
+    mcp_server.tool()(get_page_links)
