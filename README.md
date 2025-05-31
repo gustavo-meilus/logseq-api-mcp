@@ -65,7 +65,7 @@ Perfect for:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/your-username/logseq-api-mcp.git
+   git clone https://github.com/gustavo-meilus/logseq-api-mcp.git
    cd logseq-api-mcp
    ```
 
@@ -361,14 +361,14 @@ uv run mcp run src/server.py
 
 ## Contributing
 
-We welcome contributions! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
+We follow **GitHub Flow** for all contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for complete details.
 
-### How to Contribute
+### Quick Start
 
 1. **Fork the repository**
 2. **Create a feature branch**
    ```bash
-   git checkout -b feature/amazing-feature
+   git checkout -b feature/add-search-tool
    ```
 3. **Make your changes**
 4. **Format and check code**
@@ -381,23 +381,27 @@ We welcome contributions! Whether you're fixing bugs, adding features, or improv
    ```
 6. **Commit your changes**
    ```bash
-   git commit -m "Add amazing feature"
+   git commit -m "feat: add new search tool"
    ```
 7. **Push to your branch**
    ```bash
-   git push origin feature/amazing-feature
+   git push origin feature/add-search-tool
    ```
 8. **Open a Pull Request**
 
-### Contribution Ideas
+### Branch Naming
 
-- 🛠️ **New Tools** - Additional Logseq API integrations
-- 📊 **Analytics** - Knowledge base analysis and statistics
-- 🔍 **Search** - Advanced search and filtering capabilities
-- 🎨 **Formatting** - Enhanced output formatting options
-- 📚 **Templates** - Pre-built query templates for common use cases
-- 🧪 **Testing** - Comprehensive test suite development
-- 📖 **Documentation** - Examples, tutorials, and guides
+- `feature/description` - New features
+- `fix/description` - Bug fixes
+- `docs/description` - Documentation
+
+### Commit Messages
+
+Follow conventional commits:
+
+- `feat: add new search tool`
+- `fix: resolve API timeout issue`
+- `docs: update installation guide`
 
 ## Documentation & Resources
 
