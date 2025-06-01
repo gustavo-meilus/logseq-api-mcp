@@ -1,6 +1,6 @@
 # Logseq API MCP Server
 
-**Model Context Protocol server for Logseq API integration**
+**Model Context Protocol server for Logseq API integration with dynamic tool discovery**
 
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-green)](https://modelcontextprotocol.io/)
@@ -17,12 +17,16 @@
 - [Tool Details & Examples](#tool-details--examples)
 - [Usage Examples](#usage-examples)
 - [Development](#development)
+- [Adding New Tools](#adding-new-tools)
+- [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Overview
 
-The Logseq API MCP Server provides seamless integration between [Model Context Protocol](https://modelcontextprotocol.io/) clients and [Logseq](https://logseq.com/) knowledge bases. This server enables AI assistants and other MCP clients to interact with your Logseq notes, extract educational content, analyze knowledge relationships, and work with structured information through a comprehensive set of 6 specialized tools.
+The Logseq API MCP Server provides seamless integration between [Model Context Protocol](https://modelcontextprotocol.io/) clients and [Logseq](https://logseq.com/) knowledge bases. This server enables AI assistants and other MCP clients to interact with your Logseq notes, extract educational content, analyze knowledge relationships, and work with structured information through a comprehensive set of specialized tools.
+
+**🚀 Key Innovation**: Features a **dynamic tool discovery system** that automatically detects, imports, and registers any new tools added to the `src/tools/` directory - **zero configuration required**!
 
 Perfect for:
 
@@ -34,7 +38,7 @@ Perfect for:
 
 ## Features
 
-### 🛠️ Core Tools (6 Total)
+### 🛠️ Core Tools (6 Available)
 
 1. **`get_all_pages`** - Complete page listing with metadata
 2. **`get_page_blocks`** - Hierarchical block structure analysis
@@ -42,6 +46,13 @@ Perfect for:
 4. **`get_block_content`** - Detailed block content with children
 5. **`get_all_page_content`** - Comprehensive page content extraction
 6. **`get_linked_flashcards`** - Advanced flashcard collection and analysis
+
+### 🔄 Dynamic Tool Discovery
+
+- **Auto-Discovery** - Automatically finds and imports tools from `src/tools/`
+- **Zero Configuration** - No manual imports or registrations needed
+- **Instant Integration** - New tools are immediately available
+- **CI Validation** - Automated testing ensures all tools work correctly
 
 ### 🎯 Optimized for AI/LLM Consumption
 
@@ -320,15 +331,18 @@ Add to your Claude Desktop MCP settings (`~/.claude/claude_desktop_config.json`)
 logseq-api-mcp/
 ├── src/
 │   ├── server.py              # MCP server implementation
-│   ├── registry.py            # Tool registry and configuration
-│   └── tools/                 # Tool implementations
-│       ├── __init__.py        # Tool exports
+│   ├── registry.py            # Dynamic tool discovery & registration
+│   └── tools/                 # Tool implementations (auto-discovered)
+│       ├── __init__.py        # Dynamic tool importer
 │       ├── get_all_pages.py   # Page listing tool
 │       ├── get_page_blocks.py # Block structure tool
 │       ├── get_page_links.py  # Page links tool
 │       ├── get_block_content.py # Block detail tool
 │       ├── get_all_page_content.py # Complete content tool
 │       └── get_linked_flashcards.py # Flashcard extraction tool
+├── tests/
+│   ├── test_mcp_server.py     # Automated server & tool validation
+│   └── README.md              # Testing documentation
 ├── pyproject.toml             # UV project configuration
 ├── .env.template              # Environment template
 └── README.md                  # This file
@@ -350,14 +364,102 @@ uv run mcp dev src/server.py
 uv run mcp run src/server.py
 ```
 
-### Code Quality Standards
+## Adding New Tools
 
-- **Python 3.11+** with modern async/await patterns
-- **PEP 8** compliance via Ruff formatting
-- **Type hints** for better IDE support
-- **Error handling** with comprehensive exception management
-- **Environment variables** for configuration
-- **Modular design** with separate tool implementations
+Thanks to the **dynamic discovery system**, adding new tools is incredibly simple:
+
+### 1. Create Your Tool File
+
+Create `src/tools/your_new_tool.py`:
+
+```python
+def your_new_tool(param: str) -> dict:
+    """
+    Your tool description here.
+
+    Args:
+        param: Description of parameter
+
+    Returns:
+        Dict with tool results
+    """
+    return {
+        "result": f"Processed: {param}",
+        "status": "success"
+    }
+```
+
+### 2. That's It! 🎉
+
+The system automatically:
+
+- ✅ **Discovers** your tool file
+- ✅ **Imports** the function
+- ✅ **Registers** it with the MCP server
+- ✅ **Validates** it in CI tests
+
+### Tool Requirements
+
+- **File location**: Must be in `src/tools/` directory
+- **Function visibility**: Don't start function names with `_`
+- **File naming**: Don't start filenames with `_`
+- **Documentation**: Include docstring with description
+- **Type hints**: Use for better IDE support
+
+### Dynamic Discovery Process
+
+```
+New Tool File → Auto-Scan → Import → Registration → Validation
+```
+
+1. **Auto-Scan**: `src/tools/__init__.py` scans directory for `.py` files
+2. **Import**: Dynamically imports all public functions
+3. **Registration**: `src/registry.py` auto-registers with MCP server
+4. **Validation**: Tests automatically verify tool presence
+
+## Testing
+
+### Automated Testing
+
+The project includes comprehensive automated testing:
+
+```bash
+# Run the full test suite
+uv run python tests/test_mcp_server.py
+```
+
+**Test Coverage:**
+
+- ✅ **Server Health** - Ensures MCP server starts correctly
+- ✅ **Tool Discovery** - Validates automatic tool detection
+- ✅ **Dynamic Registration** - Confirms all tools are registered
+- ✅ **CI Integration** - Runs automatically on all commits
+
+### Manual Testing
+
+```bash
+# Test with MCP Inspector (interactive)
+uv run mcp dev src/server.py
+
+# Direct server testing
+uv run mcp run src/server.py
+```
+
+### Test Output Example
+
+```
+🔍 Testing MCP Server Health and Tools...
+🔧 Discovered tools (auto-discovery): ['get_all_page_content', 'get_all_pages', 'get_block_content', 'get_linked_flashcards', 'get_page_blocks', 'get_page_links']
+
+🏥 Testing server health...
+✅ Server started and responded successfully
+✅ Dynamic tool discovery working correctly
+
+🎉 MCP Server test completed successfully!
+   📊 Tools auto-discovered: 6
+   🏥 Server health: OK
+   🔄 Dynamic discovery: OK
+```
 
 ## Contributing
 
@@ -370,38 +472,37 @@ We follow **GitHub Flow** for all contributions. See [CONTRIBUTING.md](CONTRIBUT
    ```bash
    git checkout -b feature/add-search-tool
    ```
-3. **Make your changes**
-4. **Format and check code**
+3. **Create your tool** (just add the file - automatic integration!)
+   ```bash
+   # Create src/tools/search_tool.py with your function
+   ```
+4. **Format and test**
    ```bash
    uv run ruff check --fix && uv run ruff format
+   uv run python tests/test_mcp_server.py
    ```
-5. **Test your changes**
+5. **Commit and push**
    ```bash
-   uv run mcp dev src/server.py
-   ```
-6. **Commit your changes**
-   ```bash
-   git commit -m "feat: add new search tool"
-   ```
-7. **Push to your branch**
-   ```bash
+   git commit -m "feat: add search tool for content discovery"
    git push origin feature/add-search-tool
    ```
-8. **Open a Pull Request**
+6. **Open a Pull Request**
 
-### Branch Naming
+### Development Benefits
 
-- `feature/description` - New features
-- `fix/description` - Bug fixes
-- `docs/description` - Documentation
+- **Zero Configuration** - No manual imports or registrations
+- **Instant Feedback** - Tools work immediately after creation
+- **Automated Validation** - CI tests verify everything works
+- **Clean Architecture** - Dynamic system keeps code organized
 
-### Commit Messages
+### Code Quality Standards
 
-Follow conventional commits:
-
-- `feat: add new search tool`
-- `fix: resolve API timeout issue`
-- `docs: update installation guide`
+- **Python 3.11+** with modern async/await patterns
+- **PEP 8** compliance via Ruff formatting
+- **Type hints** for better IDE support
+- **Error handling** with comprehensive exception management
+- **Environment variables** for configuration
+- **Modular design** with dynamic tool loading
 
 ## Documentation & Resources
 
@@ -409,6 +510,7 @@ Follow conventional commits:
 - [Logseq API Documentation](https://logseq.github.io/plugins/)
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
 - [UV Package Manager](https://docs.astral.sh/uv/)
+- [Testing Documentation](tests/README.md)
 
 ## License
 

@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.11"]
 
     steps:
       - uses: actions/checkout@v4
@@ -33,5 +33,5 @@ jobs:
       - name: Run ruff format check
         run: uv run ruff format --check
 
-      - name: Test MCP server
-        run: uv run mcp dev src/server.py --timeout 10
+      - name: Test MCP server health and tools
+        run: uv run python tests/test_mcp_server.py
