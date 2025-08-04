@@ -17,7 +17,7 @@ async def get_all_pages(start: int = None, end: int = None) -> List[TextContent]
     Returns a clean listing optimized for LLM consumption with key identifiers
     and timestamps for each page. By default shows all pages, but can be limited
     with start and end parameters.
-    
+
     Args:
         start: Starting index (0-based, inclusive). If None, starts from beginning.
         end: Ending index (0-based, exclusive). If None, goes to end.
@@ -89,9 +89,9 @@ async def get_all_pages(start: int = None, end: int = None) -> List[TextContent]
             if start is not None or end is not None:
                 # Apply limits to regular pages
                 regular_pages = regular_pages[start:end]
-                # Apply limits to journal pages  
+                # Apply limits to journal pages
                 journal_pages = journal_pages[start:end]
-                
+
                 # Build output with range information
                 range_info = f" (showing indices {start if start is not None else 0}-{end if end is not None else 'end'})"
                 output_lines = [
