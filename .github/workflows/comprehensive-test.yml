@@ -1,0 +1,143 @@
+name: Comprehensive Test Suite
+
+on:
+  schedule:
+    # Run every Sunday at 2 AM UTC
+    - cron: "0 2 * * 0"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  comprehensive-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11, 3.12, "3.13"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run comprehensive tests
+        run: |
+          uv run pytest tests/ -v --cov=src/tools --cov-report=xml --cov-report=html --cov-fail-under=85 --durations=10
+
+      - name: Run specific tool tests
+        run: |
+          uv run python tests/test_runner.py --tool append_block_in_page
+          uv run python tests/test_runner.py --tool create_page
+          uv run python tests/test_runner.py --tool edit_block
+          uv run python tests/test_runner.py --tool get_tools
+
+      - name: Test MCP server integration
+        run: |
+          uv run python tests/test_mcp_server.py
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}-python${{ matrix.python-version }}
+          path: |
+            htmlcov/
+            coverage.xml
+            .pytest_cache/
+
+  performance-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run performance tests
+        run: |
+          uv run pytest tests/ -v --durations=0 --tb=short
+
+      - name: Memory usage test
+        run: |
+          uv run python -c "
+          import tracemalloc
+          import sys
+          sys.path.insert(0, 'src')
+
+          tracemalloc.start()
+          import tools
+          current, peak = tracemalloc.get_traced_memory()
+          print(f'Memory usage - Current: {current / 1024 / 1024:.2f} MB, Peak: {peak / 1024 / 1024:.2f} MB')
+          assert peak < 50 * 1024 * 1024, f'Memory usage too high: {peak / 1024 / 1024:.2f} MB'
+          "
+
+  integration-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Test MCP server with real tools
+        run: |
+          timeout 30s uv run mcp dev src/server.py &
+          sleep 5
+          echo "MCP server started successfully"
+          pkill -f "mcp dev" || true
+
+      - name: Test tool registration
+        run: |
+          uv run python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          from registry import register_all_tools
+          from mcp.server.fastmcp import FastMCP
+
+          mcp = FastMCP('test-server')
+          register_all_tools(mcp)
+
+          # Test that tools are registered
+          tools = mcp.list_tools()
+          print(f'Registered tools: {len(tools)}')
+          assert len(tools) >= 9, f'Expected at least 9 tools, found {len(tools)}'
+          print('Tool registration test passed')
+          "

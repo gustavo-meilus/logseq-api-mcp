@@ -14,8 +14,13 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ruff>=0.11.12",
+    "mypy>=1.8.0",
+    "bandit>=1.7.5",
+    "safety>=2.3.5",
+    "pip-licenses>=4.3.0",
 ]
 test = [
     "pytest>=8.3.5",
     "pytest-asyncio>=1.0.0",
+    "pytest-cov>=4.1.0",
 ]

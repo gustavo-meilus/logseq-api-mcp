@@ -1,0 +1,30 @@
+# GitHub Actions Status Badges Configuration
+# These badges can be added to your README.md
+
+badges:
+  - name: "Tests"
+    image: "https://github.com/{{owner}}/{{repo}}/workflows/Test%20Suite/badge.svg"
+    url: "https://github.com/{{owner}}/{{repo}}/actions/workflows/test.yml"
+    alt: "Tests"
+
+  - name: "Quality"
+    image: "https://github.com/{{owner}}/{{repo}}/workflows/Code%20Quality%20%26%20Security/badge.svg"
+    url: "https://github.com/{{owner}}/{{repo}}/actions/workflows/quality.yml"
+    alt: "Code Quality"
+
+  - name: "PR Validation"
+    image: "https://github.com/{{owner}}/{{repo}}/workflows/Pull%20Request%20Validation/badge.svg"
+    url: "https://github.com/{{owner}}/{{repo}}/actions/workflows/pr-validation.yml"
+    alt: "PR Validation"
+
+  - name: "Comprehensive Tests"
+    image: "https://github.com/{{owner}}/{{repo}}/workflows/Comprehensive%20Test%20Suite/badge.svg"
+    url: "https://github.com/{{owner}}/{{repo}}/actions/workflows/comprehensive-test.yml"
+    alt: "Comprehensive Tests"
+
+# Markdown format for README.md:
+markdown: |
+  [![Tests](https://github.com/{{owner}}/{{repo}}/workflows/Test%20Suite/badge.svg)](https://github.com/{{owner}}/{{repo}}/actions/workflows/test.yml)
+  [![Quality](https://github.com/{{owner}}/{{repo}}/workflows/Code%20Quality%20%26%20Security/badge.svg)](https://github.com/{{owner}}/{{repo}}/actions/workflows/quality.yml)
+  [![PR Validation](https://github.com/{{owner}}/{{repo}}/workflows/Pull%20Request%20Validation/badge.svg)](https://github.com/{{owner}}/{{repo}}/actions/workflows/pr-validation.yml)
+  [![Comprehensive Tests](https://github.com/{{owner}}/{{repo}}/workflows/Comprehensive%20Test%20Suite/badge.svg)](https://github.com/{{owner}}/{{repo}}/actions/workflows/comprehensive-test.yml)

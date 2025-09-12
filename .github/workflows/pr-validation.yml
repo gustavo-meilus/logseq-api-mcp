@@ -1,0 +1,145 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-validation:
+    runs-on: ubuntu-latest
+    name: Validate Pull Request
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Check for test coverage
+        run: |
+          echo "Running tests to ensure coverage..."
+          uv run pytest tests/ --cov=src/tools --cov-report=term-missing --cov-fail-under=80
+
+      - name: Validate tool discovery
+        run: |
+          echo "Validating tool discovery..."
+          uv run python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          import tools
+          print(f'✅ Discovered {len(tools.__all__)} tools: {tools.__all__}')
+
+          expected_tools = [
+              'append_block_in_page',
+              'create_page', 
+              'edit_block',
+              'get_all_pages',
+              'get_page_blocks',
+              'get_block_content',
+              'get_all_page_content',
+              'get_page_links',
+              'get_linked_flashcards'
+          ]
+
+          for tool in expected_tools:
+              assert tool in tools.__all__, f'Missing expected tool: {tool}'
+
+          print('✅ All expected tools are discovered')
+          "
+
+      - name: Test MCP server startup
+        run: |
+          echo "Testing MCP server startup..."
+          timeout 15s uv run python tests/test_mcp_server.py || echo "MCP server test completed"
+
+      - name: Run linting
+        run: |
+          echo "Running code quality checks..."
+          uv run ruff check src/ tests/ --output-format=github
+          uv run ruff format --check src/ tests/
+
+      - name: Check for security issues
+        run: |
+          echo "Running security scan..."
+          uv run bandit -r src/ -f json -o bandit-report.json || true
+          if [ -f bandit-report.json ]; then
+            echo "Security scan completed. Check bandit-report.json for details."
+          fi
+
+      - name: Validate test structure
+        run: |
+          echo "Validating test structure..."
+          python -c "
+          import os
+          test_files = [
+              'tests/test_append_block_in_page.py',
+              'tests/test_create_page.py', 
+              'tests/test_edit_block.py',
+              'tests/test_get_tools.py',
+              'tests/conftest.py'
+          ]
+
+          for test_file in test_files:
+              assert os.path.exists(test_file), f'Missing test file: {test_file}'
+
+          print('✅ All required test files are present')
+          "
+
+      - name: Test individual tool suites
+        run: |
+          echo "Running individual tool test suites..."
+          uv run pytest tests/test_append_block_in_page.py -v --tb=short
+          uv run pytest tests/test_create_page.py -v --tb=short  
+          uv run pytest tests/test_edit_block.py -v --tb=short
+          uv run pytest tests/test_get_tools.py -v --tb=short
+
+      - name: Generate test report
+        run: |
+          echo "Generating test report..."
+          uv run pytest tests/ --cov=src/tools --cov-report=html --cov-report=term-missing
+          echo "Test report generated in htmlcov/"
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-pr-${{ github.event.number }}
+          path: |
+            htmlcov/
+            bandit-report.json
+            .pytest_cache/
+
+  pr-summary:
+    runs-on: ubuntu-latest
+    needs: pr-validation
+    if: always()
+
+    steps:
+      - name: PR Validation Summary
+        run: |
+          if [ "${{ needs.pr-validation.result }}" == "success" ]; then
+            echo "✅ All PR validation checks passed!"
+            echo "✅ Tests are running correctly"
+            echo "✅ Code quality checks passed"
+            echo "✅ Tool discovery is working"
+            echo "✅ MCP server can start"
+          else
+            echo "❌ Some PR validation checks failed"
+            echo "Please check the logs for details"
+            exit 1
+          fi

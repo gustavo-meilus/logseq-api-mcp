@@ -1,0 +1,220 @@
+name: Code Quality & Security
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security checks daily at 3 AM UTC
+    - cron: "0 3 * * *"
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality Checks
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run Ruff linter
+        run: |
+          echo "Running Ruff linter..."
+          uv run ruff check src/ tests/ --statistics --show-fixes
+
+      - name: Run Ruff formatter check
+        run: |
+          echo "Checking code formatting..."
+          uv run ruff format --check src/ tests/ --diff
+
+      - name: Run MyPy type checker
+        run: |
+          echo "Running MyPy type checker..."
+          uv run mypy src/ --ignore-missing-imports --show-error-codes
+
+      - name: Run Bandit security linter
+        run: |
+          echo "Running Bandit security scanner..."
+          uv run bandit -r src/ -f json -o bandit-report.json || true
+          uv run bandit -r src/ -f txt
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "Checking for TODO/FIXME comments..."
+          if grep -r "TODO\|FIXME" src/ tests/ --exclude-dir=__pycache__; then
+            echo "⚠️ Found TODO/FIXME comments in code"
+            echo "Consider addressing these before merging"
+          else
+            echo "✅ No TODO/FIXME comments found"
+          fi
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Checking for potential hardcoded secrets..."
+          if grep -r -i "password\|secret\|key\|token" src/ --exclude-dir=__pycache__ | grep -v "LOGSEQ_API_TOKEN\|Bearer"; then
+            echo "⚠️ Potential hardcoded secrets found"
+            echo "Please review and use environment variables instead"
+            exit 1
+          else
+            echo "✅ No hardcoded secrets found"
+          fi
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-report
+          path: bandit-report.json
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    name: Dependency Security Check
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Check for vulnerable dependencies
+        run: |
+          echo "Checking for vulnerable dependencies..."
+          uv run safety check --json --output safety-report.json || true
+          uv run safety check
+
+      - name: Check dependency licenses
+        run: |
+          echo "Checking dependency licenses..."
+          uv run pip-licenses --format=json --output-file=licenses.json || true
+          uv run pip-licenses
+
+      - name: Upload dependency reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: dependency-reports
+          path: |
+            safety-report.json
+            licenses.json
+
+  test-coverage:
+    runs-on: ubuntu-latest
+    name: Test Coverage Analysis
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run tests with coverage
+        run: |
+          echo "Running tests with coverage analysis..."
+          uv run pytest tests/ --cov=src/tools --cov-report=xml --cov-report=html --cov-report=term-missing --cov-fail-under=80
+
+      - name: Analyze coverage
+        run: |
+          echo "Analyzing test coverage..."
+          python -c "
+          import xml.etree.ElementTree as ET
+          import sys
+
+          try:
+              tree = ET.parse('coverage.xml')
+              root = tree.getroot()
+              coverage = float(root.get('line-rate', 0)) * 100
+              print(f'Coverage: {coverage:.2f}%')
+              
+              if coverage < 80:
+                  print('❌ Coverage is below 80%')
+                  sys.exit(1)
+              else:
+                  print('✅ Coverage meets requirements')
+          except Exception as e:
+              print(f'Error analyzing coverage: {e}')
+              sys.exit(1)
+          "
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-reports
+          path: |
+            htmlcov/
+            coverage.xml
+
+  quality-gate:
+    runs-on: ubuntu-latest
+    needs: [code-quality, dependency-check, test-coverage]
+    if: always()
+
+    steps:
+      - name: Quality Gate Summary
+        run: |
+          echo "🔍 Quality Gate Summary"
+          echo "======================"
+
+          if [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "✅ Code Quality: PASSED"
+          else
+            echo "❌ Code Quality: FAILED"
+          fi
+
+          if [ "${{ needs.dependency-check.result }}" == "success" ]; then
+            echo "✅ Dependency Check: PASSED"
+          else
+            echo "❌ Dependency Check: FAILED"
+          fi
+
+          if [ "${{ needs.test-coverage.result }}" == "success" ]; then
+            echo "✅ Test Coverage: PASSED"
+          else
+            echo "❌ Test Coverage: FAILED"
+          fi
+
+          if [ "${{ needs.code-quality.result }}" == "success" ] && [ "${{ needs.dependency-check.result }}" == "success" ] && [ "${{ needs.test-coverage.result }}" == "success" ]; then
+            echo ""
+            echo "🎉 All quality checks passed!"
+            echo "✅ Code is ready for merge"
+          else
+            echo ""
+            echo "❌ Some quality checks failed"
+            echo "Please address the issues before merging"
+            exit 1
+          fi
