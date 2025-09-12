@@ -6,6 +6,9 @@
 [![MCP](https://img.shields.io/badge/MCP-compatible-green)](https://modelcontextprotocol.io/)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![UV](https://img.shields.io/badge/package%20manager-uv-orange)](https://docs.astral.sh/uv/)
+[![Tests](https://github.com/gustavo-meilus/logseq-api-mcp/workflows/Test%20Suite/badge.svg)](https://github.com/gustavo-meilus/logseq-api-mcp/actions/workflows/test.yml)
+[![Quality](https://github.com/gustavo-meilus/logseq-api-mcp/workflows/Code%20Quality%20%26%20Security/badge.svg)](https://github.com/gustavo-meilus/logseq-api-mcp/actions/workflows/quality.yml)
+[![PR Validation](https://github.com/gustavo-meilus/logseq-api-mcp/workflows/Pull%20Request%20Validation/badge.svg)](https://github.com/gustavo-meilus/logseq-api-mcp/actions/workflows/pr-validation.yml)
 
 ## Table of Contents
 
@@ -19,6 +22,7 @@
 - [Development](#development)
 - [Adding New Tools](#adding-new-tools)
 - [Testing](#testing)
+- [CI/CD Pipeline](#cicd-pipeline)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -38,7 +42,9 @@ Perfect for:
 
 ## Features
 
-### 🛠️ Core Tools (6 Available)
+### 🛠️ Core Tools (9 Available)
+
+#### Read Operations
 
 1. **`get_all_pages`** - Complete page listing with metadata
 2. **`get_page_blocks`** - Hierarchical block structure analysis
@@ -46,6 +52,12 @@ Perfect for:
 4. **`get_block_content`** - Detailed block content with children
 5. **`get_all_page_content`** - Comprehensive page content extraction
 6. **`get_linked_flashcards`** - Advanced flashcard collection and analysis
+
+#### Write Operations
+
+7. **`append_block_in_page`** - Append blocks to pages with positioning options
+8. **`create_page`** - Create new pages with properties and format
+9. **`edit_block`** - Edit existing blocks with content, properties, and cursor control
 
 ### 🔄 Dynamic Tool Discovery
 
@@ -127,6 +139,9 @@ LOGSEQ_API_TOKEN=your_api_token_here
 | `get_block_content`     | Detailed block info with children       | Block content + immediate children   | Deep content analysis          |
 | `get_all_page_content`  | Complete page content + references      | Full content with linked sources     | Comprehensive content review   |
 | `get_linked_flashcards` | Flashcards from page + linked pages     | 20 flashcards across 2 pages         | Study material extraction      |
+| `append_block_in_page`  | Append blocks to pages with positioning | Success confirmation with details    | Content creation, organization |
+| `create_page`           | Create new pages with properties        | Page creation confirmation           | Page management, structure     |
+| `edit_block`            | Edit existing blocks with full control  | Edit confirmation with changes       | Content modification, updates  |
 
 ## Tool Details & Examples
 
@@ -266,6 +281,147 @@ Resposta Correta: Para garantir que o software seja construído com base no conh
 
 ---
 
+### ✏️ `append_block_in_page`
+
+**Purpose:** Append new blocks to any page with precise positioning control
+
+**Key Features:**
+
+- **Positioning Options** - Insert before specific blocks, as siblings, or at page end
+- **Page-level Blocks** - Support for page-level block creation
+- **Content Flexibility** - Support for any text content including markdown
+- **Immediate Feedback** - Detailed confirmation with positioning information
+
+**Example Usage:**
+
+```python
+# Basic block append
+await append_block_in_page("My Page", "New content here")
+
+# Positioned before specific block
+await append_block_in_page("My Page", "Important note", before="block-uuid-123")
+
+# As sibling of another block
+await append_block_in_page("My Page", "Related content", sibling="block-uuid-456")
+
+# Page-level block
+await append_block_in_page("My Page", "Page property", is_page_block=True)
+```
+
+**Output Example:**
+
+```
+✅ **BLOCK APPENDED SUCCESSFULLY**
+📄 Page: My Page
+📝 Content: New content here
+📍 Positioned: At the end of the page
+🔗 **NEXT STEPS:**
+• Check your Logseq graph to see the new block
+• Use get_page_blocks to verify the block was added
+• Use get_block_content to get details of the new block
+```
+
+---
+
+### 📄 `create_page`
+
+**Purpose:** Create new pages with custom properties and formatting
+
+**Key Features:**
+
+- **Property Support** - Add custom properties and metadata
+- **Format Options** - Support for markdown and org formats
+- **Journal Detection** - Automatic journal page recognition
+- **Comprehensive Metadata** - Full page entity information
+
+**Example Usage:**
+
+```python
+# Basic page creation
+await create_page("New Page")
+
+# With properties
+properties = {"status": "active", "priority": "high"}
+await create_page("Project Page", properties=properties)
+
+# With format specification
+await create_page("Org Page", format="org")
+
+# Complete page with all options
+await create_page("Complete Page", properties=properties, format="markdown")
+```
+
+**Output Example:**
+
+```
+✅ **PAGE CREATED SUCCESSFULLY**
+📄 Page: New Page
+⚙️ Properties set: 2 items
+📝 Format: markdown
+🔗 **NEXT STEPS:**
+• Check your Logseq graph to see the new page
+• Use get_all_pages to verify the page was created
+• Use get_page_blocks to start adding content
+```
+
+---
+
+### ✏️ `edit_block`
+
+**Purpose:** Edit existing blocks with full control over content, properties, and behavior
+
+**Key Features:**
+
+- **Content Editing** - Modify block content with preview
+- **Property Management** - Add, update, or remove block properties
+- **Cursor Control** - Position cursor at specific locations
+- **Focus Management** - Control block focus after editing
+
+**Example Usage:**
+
+```python
+# Edit content only
+await edit_block("block-uuid-123", content="Updated content")
+
+# Update properties
+properties = {"status": "completed", "priority": "high"}
+await edit_block("block-uuid-123", properties=properties)
+
+# Set cursor position and focus
+await edit_block("block-uuid-123", cursor_position=10, focus=True)
+
+# Complete edit with all options
+await edit_block("block-uuid-123",
+                content="New content",
+                properties=properties,
+                cursor_position=5,
+                focus=True)
+```
+
+**Output Example:**
+
+```
+✅ **BLOCK EDITED SUCCESSFULLY**
+🔑 Block UUID: block-uuid-123
+📝 **UPDATED CONTENT:**
+```
+
+New content
+
+```
+⚙️ **UPDATED PROPERTIES:**
+• status: completed
+• priority: high
+📍 Cursor positioned at index 5
+🎯 Focus: Enabled
+🔗 **NEXT STEPS:**
+• Check your Logseq graph to see the updated block
+• Use get_block_content to verify the changes
+• Continue editing or add more content
+```
+
+---
+
 ### 🧠 `get_linked_flashcards`
 
 **Purpose:** Comprehensive flashcard extraction from target page and all linked pages
@@ -329,6 +485,14 @@ Add to your Claude Desktop MCP settings (`~/.claude/claude_desktop_config.json`)
 
 ```
 logseq-api-mcp/
+├── .github/
+│   ├── workflows/             # GitHub Actions CI/CD
+│   │   ├── test.yml           # Main test suite
+│   │   ├── pr-validation.yml  # PR validation
+│   │   ├── comprehensive-test.yml # Extended testing
+│   │   └── quality.yml        # Code quality & security
+│   ├── ISSUE_TEMPLATE/        # Issue templates
+│   └── pull_request_template.md # PR template
 ├── src/
 │   ├── server.py              # MCP server implementation
 │   ├── registry.py            # Dynamic tool discovery & registration
@@ -339,10 +503,19 @@ logseq-api-mcp/
 │       ├── get_page_links.py  # Page links tool
 │       ├── get_block_content.py # Block detail tool
 │       ├── get_all_page_content.py # Complete content tool
-│       └── get_linked_flashcards.py # Flashcard extraction tool
+│       ├── get_linked_flashcards.py # Flashcard extraction tool
+│       ├── append_block_in_page.py # Block creation tool
+│       ├── create_page.py     # Page creation tool
+│       └── edit_block.py      # Block editing tool
 ├── tests/
-│   ├── test_mcp_server.py     # Automated server & tool validation
-│   └── README.md              # Testing documentation
+│   ├── conftest.py            # Shared test fixtures
+│   ├── test_append_block_in_page.py # Block creation tests
+│   ├── test_create_page.py    # Page creation tests
+│   ├── test_edit_block.py     # Block editing tests
+│   ├── test_get_tools.py      # Read operation tests
+│   ├── test_mcp_server.py     # Server validation tests
+│   ├── test_runner.py         # Test runner utility
+│   └── TEST_SUMMARY.md        # Test documentation
 ├── pyproject.toml             # UV project configuration
 ├── .env.template              # Environment template
 └── README.md                  # This file
@@ -421,19 +594,32 @@ New Tool File → Auto-Scan → Import → Registration → Validation
 
 ### Automated Testing
 
-The project includes comprehensive automated testing:
+The project includes comprehensive automated testing with **68 test cases** covering all functionality:
 
 ```bash
 # Run the full test suite
+uv run pytest tests/ --cov=src/tools --cov-report=html
+
+# Run specific tool tests
+uv run python tests/test_runner.py --tool append_block_in_page
+uv run python tests/test_runner.py --tool create_page
+uv run python tests/test_runner.py --tool edit_block
+
+# Run server validation
 uv run python tests/test_mcp_server.py
 ```
 
 **Test Coverage:**
 
+- ✅ **68 Test Cases** - Comprehensive coverage of all 9 tools
 - ✅ **Server Health** - Ensures MCP server starts correctly
 - ✅ **Tool Discovery** - Validates automatic tool detection
 - ✅ **Dynamic Registration** - Confirms all tools are registered
+- ✅ **Write Operations** - Tests for append, create, and edit tools
+- ✅ **Read Operations** - Tests for all get\_\* tools
+- ✅ **Error Handling** - HTTP errors, network issues, edge cases
 - ✅ **CI Integration** - Runs automatically on all commits
+- ✅ **Coverage Reporting** - 80% minimum coverage requirement
 
 ### Manual Testing
 
@@ -449,17 +635,91 @@ uv run mcp run src/server.py
 
 ```
 🔍 Testing MCP Server Health and Tools...
-🔧 Discovered tools (auto-discovery): ['get_all_page_content', 'get_all_pages', 'get_block_content', 'get_linked_flashcards', 'get_page_blocks', 'get_page_links']
+🔧 Discovered tools (auto-discovery): ['append_block_in_page', 'create_page', 'edit_block', 'get_all_page_content', 'get_all_pages', 'get_block_content', 'get_linked_flashcards', 'get_page_blocks', 'get_page_links']
 
 🏥 Testing server health...
 ✅ Server started and responded successfully
 ✅ Dynamic tool discovery working correctly
 
 🎉 MCP Server test completed successfully!
-   📊 Tools auto-discovered: 6
+   📊 Tools auto-discovered: 9
    🏥 Server health: OK
    🔄 Dynamic discovery: OK
 ```
+
+## CI/CD Pipeline
+
+The project includes a comprehensive CI/CD pipeline with automated testing, code quality checks, and security scanning.
+
+### 🚀 **Automated Workflows**
+
+#### **Pull Request Validation**
+
+- ✅ **Test Coverage** - 80% minimum coverage requirement
+- ✅ **Code Quality** - Ruff linting and MyPy type checking
+- ✅ **Security Scanning** - Bandit security analysis
+- ✅ **Tool Discovery** - Automated tool validation
+- ✅ **MCP Server Testing** - Server startup and functionality tests
+
+#### **Main Test Suite**
+
+- ✅ **Multi-Python Testing** - Python 3.11, 3.12, and 3.13
+- ✅ **Cross-Platform** - Ubuntu, Windows, and macOS
+- ✅ **Performance Testing** - Memory usage and test duration
+- ✅ **Integration Testing** - Real MCP server with tools
+
+#### **Code Quality & Security**
+
+- ✅ **Daily Security Scans** - Automated vulnerability detection
+- ✅ **Dependency Checking** - Safety and license validation
+- ✅ **Code Standards** - Automated formatting and linting
+- ✅ **Secret Detection** - Hardcoded credential scanning
+
+### 📊 **Quality Gates**
+
+All workflows must pass for:
+
+- ✅ Code to be merged to main
+- ✅ Releases to be published
+- ✅ PRs to be approved
+
+### 🔧 **Local Testing**
+
+Run the same checks locally:
+
+```bash
+# Install dependencies
+uv sync --dev
+
+# Run tests with coverage
+uv run pytest tests/ --cov=src/tools --cov-report=html
+
+# Run linting
+uv run ruff check src/ tests/
+uv run ruff format --check src/ tests/
+
+# Run type checking
+uv run mypy src/ --ignore-missing-imports
+
+# Run security scan
+uv run bandit -r src/
+
+# Run dependency check
+uv run safety check
+```
+
+### 📈 **Coverage Requirements**
+
+- **Minimum Coverage:** 80% for PR validation
+- **Target Coverage:** 85% for comprehensive testing
+- **Coverage Tools:** pytest-cov with HTML and XML reports
+
+### 🛡️ **Security Features**
+
+- **Bandit** - Python security linter
+- **Safety** - Dependency vulnerability scanner
+- **Secret Detection** - Hardcoded credential detection
+- **License Check** - Dependency license validation
 
 ## Contributing
 
@@ -494,6 +754,9 @@ We follow **GitHub Flow** for all contributions. See [CONTRIBUTING.md](CONTRIBUT
 - **Instant Feedback** - Tools work immediately after creation
 - **Automated Validation** - CI tests verify everything works
 - **Clean Architecture** - Dynamic system keeps code organized
+- **Comprehensive Testing** - 68 test cases with 80% coverage
+- **Quality Assurance** - Automated linting, type checking, and security
+- **CI/CD Pipeline** - Automated testing on every PR and push
 
 ### Code Quality Standards
 
