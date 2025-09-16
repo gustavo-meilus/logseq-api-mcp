@@ -1,9 +1,10 @@
 import os
-import aiohttp
-from typing import List
-from mcp.types import TextContent
-from dotenv import load_dotenv
 from pathlib import Path
+from typing import List
+
+import aiohttp
+from dotenv import load_dotenv
+from mcp.types import TextContent
 
 # Load environment variables from .env file in project root
 env_path = Path(__file__).parent.parent.parent / ".env"
@@ -31,12 +32,12 @@ async def get_block_content(block_uuid: str) -> List[TextContent]:
             return "None"
 
         formatted_props = []
-        for key, value in props.items():
+        for prop_key, value in props.items():
             if isinstance(value, list):
                 value_str = ", ".join(str(v) for v in value)
             else:
                 value_str = str(value)
-            formatted_props.append(f"**{key}**: {value_str}")
+            formatted_props.append(f"**{prop_key}**: {value_str}")
 
         return "\n".join(formatted_props)
 

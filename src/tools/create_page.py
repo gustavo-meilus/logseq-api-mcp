@@ -104,8 +104,8 @@ async def create_page(
                             [
                                 "⚙️ **PAGE PROPERTIES:**",
                                 *[
-                                    f"• {key}: {value}"
-                                    for key, value in page_properties.items()
+                                    f"• {prop_name}: {prop_value}"
+                                    for prop_name, prop_value in page_properties.items()
                                 ],
                                 "",
                             ]

@@ -81,7 +81,8 @@ async def get_all_pages(
 
             # Sort pages alphabetically by name
             sorted_pages = sorted(
-                pages, key=lambda p: p.get("originalName", p.get("name", "")).lower()
+                pages,
+                key=lambda page: page.get("originalName", page.get("name", "")).lower(),
             )
 
             # Separate journal and regular pages

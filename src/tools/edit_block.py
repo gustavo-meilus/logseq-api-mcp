@@ -142,7 +142,10 @@ async def edit_block(
                     output_lines.extend(
                         [
                             "⚙️ **UPDATED PROPERTIES:**",
-                            *[f"• {key}: {value}" for key, value in properties.items()],
+                            *[
+                                f"• {prop_name}: {prop_value}"
+                                for prop_name, prop_value in properties.items()
+                            ],
                             "",
                         ]
                     )

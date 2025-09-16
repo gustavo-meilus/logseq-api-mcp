@@ -69,9 +69,9 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
             return "None"
 
         formatted_props = []
-        for key, value in props.items():
+        for prop_key, value in props.items():
             if (
-                key
+                prop_key
                 not in [
                     "collapsed",
                     "card-last-interval",
@@ -84,7 +84,7 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
                     value_str = ", ".join(str(v) for v in value)
                 else:
                     value_str = str(value)
-                formatted_props.append(f"{key}: {value_str}")
+                formatted_props.append(f"{prop_key}: {value_str}")
 
         return " | ".join(formatted_props[:3]) if formatted_props else "None"
 
@@ -181,9 +181,9 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
 
             # Find target page
             target_page = None
-            search_key = page_identifier.lower()
-            if search_key in page_lookup:
-                target_page = page_lookup[search_key]
+            search_identifier = page_identifier.lower()
+            if search_identifier in page_lookup:
+                target_page = page_lookup[search_identifier]
 
             if not target_page:
                 return [
@@ -271,7 +271,10 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
 
             # 7. Sort flashcards by page name, then by block ID
             enriched_flashcards.sort(
-                key=lambda f: (f["page"]["name"] or "", f["block_id"] or 0)
+                key=lambda flashcard: (
+                    flashcard["page"]["name"] or "",
+                    flashcard["block_id"] or 0,
+                )
             )
 
             # 8. Build output
