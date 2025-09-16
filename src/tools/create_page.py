@@ -34,7 +34,7 @@ async def create_page(
     headers = {"Authorization": f"Bearer {token}"}
 
     # Build options object
-    options = {}
+    options: dict[str, Any] = {}
     if properties:
         options["properties"] = properties
     if format:

@@ -1,9 +1,10 @@
 import os
-import aiohttp
-from typing import List
-from mcp.types import TextContent
-from dotenv import load_dotenv
 from pathlib import Path
+from typing import Any, List
+
+import aiohttp
+from dotenv import load_dotenv
+from mcp.types import TextContent
 
 # Load environment variables from .env file in project root
 env_path = Path(__file__).parent.parent.parent / ".env"
@@ -145,7 +146,7 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
             async with session.post(
                 endpoint, json=links_payload, headers=headers
             ) as response:
-                linked_refs = []
+                linked_refs: list[dict[str, Any]] = []
                 if response.status == 200:
                     try:
                         linked_refs = await response.json() or []
@@ -158,7 +159,7 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
             async with session.post(
                 endpoint, json=all_pages_payload, headers=headers
             ) as response:
-                all_pages = []
+                all_pages: list[dict[str, Any]] = []
                 if response.status == 200:
                     try:
                         all_pages = await response.json() or []
@@ -289,7 +290,7 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
             ]
 
             # Group flashcards by page
-            flashcards_by_page = {}
+            flashcards_by_page: dict[str, list[dict[str, Any]]] = {}
             for flashcard in enriched_flashcards:
                 page_name = flashcard["page"]["name"]
                 if page_name not in flashcards_by_page:

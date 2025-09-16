@@ -45,7 +45,7 @@ async def edit_block(
         options["focus"] = focus
 
     # Prepare the arguments for the API call
-    args = [block_identity]
+    args: list[Any] = [block_identity]
 
     # Add content if provided
     if content is not None:

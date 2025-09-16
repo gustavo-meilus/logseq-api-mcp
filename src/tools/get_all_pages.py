@@ -1,16 +1,19 @@
 import os
-import aiohttp
-from typing import List
-from mcp.types import TextContent
-from dotenv import load_dotenv
 from pathlib import Path
+from typing import List
+
+import aiohttp
+from dotenv import load_dotenv
+from mcp.types import TextContent
 
 # Load environment variables from .env file in project root
 env_path = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(env_path)
 
 
-async def get_all_pages(start: int = None, end: int = None) -> List[TextContent]:
+async def get_all_pages(
+    start: int | None = None, end: int | None = None
+) -> List[TextContent]:
     """
     Get a simple list of all pages in the Logseq graph with essential metadata.
 

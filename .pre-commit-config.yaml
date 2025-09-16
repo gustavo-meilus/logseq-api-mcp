@@ -21,3 +21,10 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+
+      - id: mypy-check
+        name: mypy-check
+        entry: uv run mypy src/ --ignore-missing-imports --show-error-codes
+        language: system
+        pass_filenames: false
+        always_run: true

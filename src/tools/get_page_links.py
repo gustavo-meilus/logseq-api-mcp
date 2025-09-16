@@ -1,9 +1,10 @@
 import os
-import aiohttp
-from typing import List
-from mcp.types import TextContent
-from dotenv import load_dotenv
 from pathlib import Path
+from typing import Any, List
+
+import aiohttp
+from dotenv import load_dotenv
+from mcp.types import TextContent
 
 # Load environment variables from .env file in project root
 env_path = Path(__file__).parent.parent.parent / ".env"
@@ -132,7 +133,7 @@ async def get_page_links(page_identifier: str) -> List[TextContent]:
             async with session.post(
                 endpoint, json=all_pages_payload, headers=headers
             ) as response:
-                all_pages = []
+                all_pages: list[dict[str, Any]] = []
                 if response.status == 200:
                     try:
                         all_pages = await response.json() or []

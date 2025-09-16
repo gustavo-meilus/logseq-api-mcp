@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import aiohttp
 from dotenv import load_dotenv
@@ -37,7 +37,7 @@ async def append_block_in_page(
     headers = {"Authorization": f"Bearer {token}"}
 
     # Build options object
-    options = {}
+    options: dict[str, Any] = {}
     if before is not None:
         options["before"] = before
     if sibling is not None:

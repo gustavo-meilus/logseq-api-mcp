@@ -5,6 +5,8 @@ fix:
 	@echo "🔧 Running Ruff fix and format..."
 	uv run ruff check src/ tests/ --fix
 	uv run ruff format src/ tests/
+	@echo "🔍 Running MyPy type check..."
+	uv run mypy src/ --ignore-missing-imports --show-error-codes
 	@echo "✅ Code fixed and formatted!"
 
 # Format code only
@@ -18,6 +20,7 @@ check:
 	@echo "🔍 Checking code quality..."
 	uv run ruff check src/ tests/
 	uv run ruff format --check src/ tests/
+	uv run mypy src/ --ignore-missing-imports --show-error-codes
 	@echo "✅ Code quality checks passed!"
 
 # Run tests
