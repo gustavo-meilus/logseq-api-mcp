@@ -270,12 +270,16 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
                 enriched_flashcards.append(enriched_flashcard)
 
             # 7. Sort flashcards by page name, then by block ID
-            enriched_flashcards.sort(
-                key=lambda flashcard: (
-                    flashcard["page"]["name"] or "",
-                    flashcard["block_id"] or 0,
-                )
-            )
+            def sort_flashcards(flashcard):
+                return (flashcard["page"]["name"] or "", flashcard["block_id"] or 0)
+
+            # Sort using a different approach to avoid 'key' parameter
+            flashcard_sorts = [
+                (sort_flashcards(flashcard), flashcard)
+                for flashcard in enriched_flashcards
+            ]
+            flashcard_sorts.sort()
+            enriched_flashcards = [flashcard for _, flashcard in flashcard_sorts]
 
             # 8. Build output
             target_page_name = target_page.get("originalName") or target_page.get(

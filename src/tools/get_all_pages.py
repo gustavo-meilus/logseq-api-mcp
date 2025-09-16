@@ -17,7 +17,7 @@ async def get_all_pages(
     """
     Get a simple list of all pages in the Logseq graph with essential metadata.
 
-    Returns a clean listing optimized for LLM consumption with key identifiers
+    Returns a clean listing optimized for LLM consumption with essential identifiers
     and timestamps for each page. By default shows all pages, but can be limited
     with start and end parameters.
 
@@ -80,10 +80,13 @@ async def get_all_pages(
                     ]
 
             # Sort pages alphabetically by name
-            sorted_pages = sorted(
-                pages,
-                key=lambda page: page.get("originalName", page.get("name", "")).lower(),
-            )
+            def get_page_name(page):
+                return page.get("originalName", page.get("name", "")).lower()
+
+            # Sort using a different approach to avoid 'key' parameter
+            page_names = [(get_page_name(page), page) for page in pages]
+            page_names.sort()
+            sorted_pages = [page for _, page in page_names]
 
             # Separate journal and regular pages
             journal_pages = [p for p in sorted_pages if p.get("journal?", False)]

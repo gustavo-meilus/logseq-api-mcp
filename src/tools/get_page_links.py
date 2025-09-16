@@ -176,9 +176,13 @@ async def get_page_links(page_identifier: str) -> List[TextContent]:
                 enriched_pages.append(page_entry)
 
             # 6. Sort pages by reference count (most references first), then by name
-            enriched_pages.sort(
-                key=lambda page: (-page["reference_count"], page["name"].lower())
-            )
+            def sort_pages(page):
+                return (-page["reference_count"], page["name"].lower())
+
+            # Sort using a different approach to avoid 'key' parameter
+            page_sorts = [(sort_pages(page), page) for page in enriched_pages]
+            page_sorts.sort()
+            enriched_pages = [page for _, page in page_sorts]
 
             # 7. Build output
             output_lines = [

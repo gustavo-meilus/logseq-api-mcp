@@ -45,7 +45,7 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
         return preview[:max_length] + "..." if len(preview) > max_length else preview
 
     def format_essential_properties(props):
-        """Format essential properties based on common patterns rather than language-specific keys"""
+        """Format essential properties based on common patterns rather than language-specific identifiers"""
         if not props:
             return []
 
