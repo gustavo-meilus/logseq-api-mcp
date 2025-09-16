@@ -104,7 +104,7 @@ jobs:
       - name: Check for vulnerable dependencies
         run: |
           echo "Checking for vulnerable dependencies..."
-          uv run safety check --json --output safety-report.json || true
+          uv run safety check --json --save-json safety-report.json || true
           uv run safety check
 
       - name: Check dependency licenses

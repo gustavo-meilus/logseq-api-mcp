@@ -5,10 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "aiohttp>=3.12.4",
+    "aiohttp>=3.12.14",
     "load-dotenv>=0.1.0",
-    "mcp[cli]>=1.9.2",
+    "mcp[cli]>=1.10.0",
     "pathlib>=1.0.1",
+    "starlette>=0.47.2",
 ]
 
 [dependency-groups]
@@ -16,7 +17,7 @@ dev = [
     "ruff>=0.11.12",
     "mypy>=1.8.0",
     "bandit>=1.7.5",
-    "safety>=2.3.5",
+    "safety>=2.3.5,<3.0.0",
     "pip-licenses>=4.3.0",
     "pre-commit>=4.0.0",
 ]
