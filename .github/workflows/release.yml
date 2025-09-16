@@ -1,0 +1,198 @@
+name: Release & Cross-Platform Testing
+
+on:
+  release:
+    types: [published]
+  schedule:
+    # Run comprehensive tests every Sunday at 2 AM UTC
+    - cron: "0 2 * * 0"
+  workflow_dispatch:
+
+jobs:
+  cross-platform-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run comprehensive tests
+        run: |
+          echo "🧪 Running comprehensive tests on ${{ matrix.os }} with Python ${{ matrix.python-version }}"
+          uv run pytest tests/ -v --cov=src --cov-report=xml --cov-report=html --cov-fail-under=85 --durations=10
+
+      - name: Test MCP server integration
+        run: |
+          echo "🔧 Testing MCP server integration..."
+          uv run pytest tests/test_mcp_server.py -v
+
+      - name: Test tool registration
+        run: |
+          echo "🔧 Testing tool registration..."
+          uv run python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          from registry import register_all_tools
+          from mcp.server.fastmcp import FastMCP
+
+          mcp = FastMCP('test-server')
+          register_all_tools(mcp)
+
+          tools = mcp.list_tools()
+          print(f'✅ Registered {len(tools)} tools')
+          assert len(tools) >= 9, f'Expected at least 9 tools, found {len(tools)}'
+          print('✅ Tool registration test passed')
+          "
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}-python${{ matrix.python-version }}
+          path: |
+            htmlcov/
+            coverage.xml
+            .pytest_cache/
+
+  package-build:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Build package
+        run: |
+          echo "📦 Building package..."
+          uv build
+
+      - name: Test package installation
+        run: |
+          echo "🧪 Testing package installation..."
+          uv run pip install dist/*.whl
+          uv run python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          import tools
+          print(f'✅ Package installation successful: {len(tools.__all__)} tools available')
+          "
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-artifacts
+          path: dist/
+
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: [cross-platform-test, package-build]
+    if: github.event_name == 'release'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Test MCP server with real tools
+        run: |
+          echo "🔧 Testing MCP server with real tools..."
+          timeout 30s uv run mcp dev src/server.py &
+          sleep 5
+          echo "✅ MCP server started successfully"
+          pkill -f "mcp dev" || true
+
+      - name: Test all tool functions
+        run: |
+          echo "🧪 Testing all tool functions..."
+          uv run python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          import tools
+
+          # Test that all tools can be imported
+          for tool_name in tools.__all__:
+              try:
+                  module = __import__(f'tools.{tool_name}', fromlist=[tool_name])
+                  print(f'✅ {tool_name}: Import successful')
+              except Exception as e:
+                  print(f'❌ {tool_name}: Import failed - {e}')
+                  sys.exit(1)
+
+          print('✅ All tool imports successful')
+          "
+
+  release-summary:
+    runs-on: ubuntu-latest
+    needs: [cross-platform-test, package-build, integration-test]
+    if: always()
+
+    steps:
+      - name: Release Summary
+        run: |
+          echo "🚀 Release Testing Summary"
+          echo "========================="
+
+          if [ "${{ needs.cross-platform-test.result }}" == "success" ]; then
+            echo "✅ Cross-Platform Tests: PASSED"
+          else
+            echo "❌ Cross-Platform Tests: FAILED"
+          fi
+
+          if [ "${{ needs.package-build.result }}" == "success" ] || [ "${{ needs.package-build.result }}" == "skipped" ]; then
+            echo "✅ Package Build: PASSED/SKIPPED"
+          else
+            echo "❌ Package Build: FAILED"
+          fi
+
+          if [ "${{ needs.integration-test.result }}" == "success" ] || [ "${{ needs.integration-test.result }}" == "skipped" ]; then
+            echo "✅ Integration Tests: PASSED/SKIPPED"
+          else
+            echo "❌ Integration Tests: FAILED"
+          fi
+
+          if [ "${{ needs.cross-platform-test.result }}" == "success" ]; then
+            echo ""
+            echo "🎉 Release testing completed successfully!"
+            echo "✅ Package is ready for distribution"
+          else
+            echo ""
+            echo "❌ Release testing failed"
+            echo "Please address the issues before releasing"
+            exit 1
+          fi

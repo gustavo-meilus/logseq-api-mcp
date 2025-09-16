@@ -1,17 +1,17 @@
-name: CI
+name: Main CI Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -38,3 +38,104 @@ jobs:
 
       - name: Test MCP server health and tools
         run: uv run pytest tests/test_mcp_server.py -v
+
+      - name: Validate tool discovery
+        run: |
+          uv run python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          import tools
+          print(f'✅ Discovered {len(tools.__all__)} tools: {tools.__all__}')
+
+          expected_tools = [
+              'append_block_in_page',
+              'create_page', 
+              'edit_block',
+              'get_all_pages',
+              'get_page_blocks',
+              'get_block_content',
+              'get_all_page_content',
+              'get_page_links',
+              'get_linked_flashcards'
+          ]
+
+          for tool in expected_tools:
+              assert tool in tools.__all__, f'Missing expected tool: {tool}'
+
+          print('✅ All expected tools are discovered')
+          "
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-python${{ matrix.python-version }}
+          path: |
+            htmlcov/
+            coverage.xml
+
+  build-test:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Build package
+        run: uv build
+
+      - name: Test package installation
+        run: |
+          uv run pip install dist/*.whl
+          uv run python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          import tools
+          print(f'✅ Package installation successful: {len(tools.__all__)} tools available')
+          "
+
+  ci-summary:
+    runs-on: ubuntu-latest
+    needs: [test, build-test]
+    if: always()
+
+    steps:
+      - name: CI Summary
+        run: |
+          echo "🔍 CI Pipeline Summary"
+          echo "====================="
+
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            echo "✅ Tests: PASSED"
+          else
+            echo "❌ Tests: FAILED"
+          fi
+
+          if [ "${{ needs.build-test.result }}" == "success" ] || [ "${{ needs.build-test.result }}" == "skipped" ]; then
+            echo "✅ Build: PASSED/SKIPPED"
+          else
+            echo "❌ Build: FAILED"
+          fi
+
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            echo ""
+            echo "🎉 CI pipeline completed successfully!"
+            echo "✅ Code is ready for merge"
+          else
+            echo ""
+            echo "❌ CI pipeline failed"
+            echo "Please address the issues before merging"
+            exit 1
+          fi

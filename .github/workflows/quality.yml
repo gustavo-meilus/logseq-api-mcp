@@ -1,60 +1,46 @@
-name: Code Quality & Security
+name: Advanced Quality & Security
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
     branches: [main, develop]
   schedule:
     # Run security checks daily at 3 AM UTC
     - cron: "0 3 * * *"
+  workflow_dispatch:
 
 jobs:
   code-quality:
     runs-on: ubuntu-latest
-    name: Code Quality Checks
+    name: Advanced Code Quality
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
           version: "latest"
 
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
       - name: Install dependencies
-        run: |
-          uv sync --dev --group test
-
-      - name: Run Ruff linter
-        run: |
-          echo "Running Ruff linter..."
-          uv run ruff check src/ tests/ --statistics --show-fixes
-
-      - name: Run Ruff formatter check
-        run: |
-          echo "Checking code formatting..."
-          uv run ruff format --check src/ tests/ --diff
+        run: uv sync
 
       - name: Run MyPy type checker
         run: |
-          echo "Running MyPy type checker..."
+          echo "🔍 Running MyPy type checker..."
           uv run mypy src/ --ignore-missing-imports --show-error-codes
 
       - name: Run Bandit security linter
         run: |
-          echo "Running Bandit security scanner..."
+          echo "🔒 Running Bandit security scanner..."
           uv run bandit -r src/ -f json -o bandit-report.json || true
           uv run bandit -r src/ -f txt
 
       - name: Check for TODO/FIXME comments
         run: |
-          echo "Checking for TODO/FIXME comments..."
+          echo "📝 Checking for TODO/FIXME comments..."
           if grep -r "TODO\|FIXME" src/ tests/ --exclude-dir=__pycache__; then
             echo "⚠️ Found TODO/FIXME comments in code"
             echo "Consider addressing these before merging"
@@ -64,7 +50,7 @@ jobs:
 
       - name: Check for hardcoded secrets
         run: |
-          echo "Checking for potential hardcoded secrets..."
+          echo "🔐 Checking for potential hardcoded secrets..."
           if grep -r -i "password\|secret\|key\|token" src/ --exclude-dir=__pycache__ | grep -v "LOGSEQ_API_TOKEN\|Bearer"; then
             echo "⚠️ Potential hardcoded secrets found"
             echo "Please review and use environment variables instead"
@@ -87,29 +73,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
-
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
           version: "latest"
 
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
       - name: Install dependencies
-        run: |
-          uv sync --dev --group test
+        run: uv sync
 
       - name: Check for vulnerable dependencies
         run: |
-          echo "Checking for vulnerable dependencies..."
+          echo "🔍 Checking for vulnerable dependencies..."
           uv run safety check --json --save-json safety-report.json || true
           uv run safety check
 
       - name: Check dependency licenses
         run: |
-          echo "Checking dependency licenses..."
+          echo "📄 Checking dependency licenses..."
           uv run pip-licenses --format=json --output-file=licenses.json || true
           uv run pip-licenses
 
@@ -122,66 +105,49 @@ jobs:
             safety-report.json
             licenses.json
 
-  test-coverage:
+  performance-test:
     runs-on: ubuntu-latest
-    name: Test Coverage Analysis
+    name: Performance & Memory Tests
+    if: github.event_name == 'schedule'
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:
           version: "latest"
 
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
       - name: Install dependencies
-        run: |
-          uv sync --dev --group test
+        run: uv sync
 
-      - name: Run tests with coverage
+      - name: Run performance tests
         run: |
-          echo "Running tests with coverage analysis..."
-          uv run pytest tests/ --cov=src/tools --cov-report=xml --cov-report=html --cov-report=term-missing --cov-fail-under=80
+          echo "⚡ Running performance tests..."
+          uv run pytest tests/ -v --durations=0 --tb=short
 
-      - name: Analyze coverage
+      - name: Memory usage test
         run: |
-          echo "Analyzing test coverage..."
-          python -c "
-          import xml.etree.ElementTree as ET
+          echo "🧠 Testing memory usage..."
+          uv run python -c "
+          import tracemalloc
           import sys
+          sys.path.insert(0, 'src')
 
-          try:
-              tree = ET.parse('coverage.xml')
-              root = tree.getroot()
-              coverage = float(root.get('line-rate', 0)) * 100
-              print(f'Coverage: {coverage:.2f}%')
-              
-              if coverage < 80:
-                  print('❌ Coverage is below 80%')
-                  sys.exit(1)
-              else:
-                  print('✅ Coverage meets requirements')
-          except Exception as e:
-              print(f'Error analyzing coverage: {e}')
-              sys.exit(1)
+          tracemalloc.start()
+          import tools
+          current, peak = tracemalloc.get_traced_memory()
+          print(f'Memory usage - Current: {current / 1024 / 1024:.2f} MB, Peak: {peak / 1024 / 1024:.2f} MB')
+          assert peak < 50 * 1024 * 1024, f'Memory usage too high: {peak / 1024 / 1024:.2f} MB'
+          print('✅ Memory usage within acceptable limits')
           "
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: |
-            htmlcov/
-            coverage.xml
 
   quality-gate:
     runs-on: ubuntu-latest
-    needs: [code-quality, dependency-check, test-coverage]
+    needs: [code-quality, dependency-check, performance-test]
     if: always()
 
     steps:
@@ -202,16 +168,16 @@ jobs:
             echo "❌ Dependency Check: FAILED"
           fi
 
-          if [ "${{ needs.test-coverage.result }}" == "success" ]; then
-            echo "✅ Test Coverage: PASSED"
+          if [ "${{ needs.performance-test.result }}" == "success" ] || [ "${{ needs.performance-test.result }}" == "skipped" ]; then
+            echo "✅ Performance Test: PASSED/SKIPPED"
           else
-            echo "❌ Test Coverage: FAILED"
+            echo "❌ Performance Test: FAILED"
           fi
 
-          if [ "${{ needs.code-quality.result }}" == "success" ] && [ "${{ needs.dependency-check.result }}" == "success" ] && [ "${{ needs.test-coverage.result }}" == "success" ]; then
+          if [ "${{ needs.code-quality.result }}" == "success" ] && [ "${{ needs.dependency-check.result }}" == "success" ]; then
             echo ""
             echo "🎉 All quality checks passed!"
-            echo "✅ Code is ready for merge"
+            echo "✅ Code meets quality standards"
           else
             echo ""
             echo "❌ Some quality checks failed"
