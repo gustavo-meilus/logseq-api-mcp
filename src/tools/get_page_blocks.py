@@ -33,8 +33,8 @@ async def get_page_blocks(page_identifier: str) -> List[TextContent]:
 
         # Filter out less important properties for concise display
         important_props = {}
-        for prop_key, value in props.items():
-            if prop_key not in [
+        for property_name, value in props.items():
+            if property_name not in [
                 "collapsed",
                 "card-last-interval",
                 "card-repeats",
@@ -43,9 +43,9 @@ async def get_page_blocks(page_identifier: str) -> List[TextContent]:
                 "card-last-reviewed",
             ]:
                 if isinstance(value, list):
-                    important_props[prop_key] = ", ".join(str(v) for v in value)
+                    important_props[property_name] = ", ".join(str(v) for v in value)
                 elif value:
-                    important_props[prop_key] = str(value)
+                    important_props[property_name] = str(value)
 
         if important_props:
             prop_items = [

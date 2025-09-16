@@ -52,7 +52,7 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
         formatted = []
 
         # Look for common property patterns (language-agnostic)
-        for prop_key, value in props.items():
+        for property_name, value in props.items():
             if not value:
                 continue
 
@@ -65,7 +65,7 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
             # Only show non-empty, meaningful properties
             # Skip only technical/system properties that clutter the display
             if (
-                prop_key
+                property_name
                 not in [
                     "collapsed",
                     "card-last-interval",
@@ -83,7 +83,7 @@ async def get_all_page_content(page_identifier: str) -> List[TextContent]:
                 and value_str.strip() != "nil"
                 and value_str.strip() != "null"
             ):
-                formatted.append(f"{prop_key}: {value_str}")
+                formatted.append(f"{property_name}: {value_str}")
 
         # Show more properties to be inclusive - increase limit
         return formatted[:8]

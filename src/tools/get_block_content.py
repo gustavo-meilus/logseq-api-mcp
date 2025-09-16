@@ -32,12 +32,12 @@ async def get_block_content(block_uuid: str) -> List[TextContent]:
             return "None"
 
         formatted_props = []
-        for prop_key, value in props.items():
+        for property_name, value in props.items():
             if isinstance(value, list):
                 value_str = ", ".join(str(v) for v in value)
             else:
                 value_str = str(value)
-            formatted_props.append(f"**{prop_key}**: {value_str}")
+            formatted_props.append(f"**{property_name}**: {value_str}")
 
         return "\n".join(formatted_props)
 

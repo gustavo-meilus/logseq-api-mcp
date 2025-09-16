@@ -84,15 +84,15 @@ async def get_page_links(page_identifier: str) -> List[TextContent]:
 
         # Show only meaningful properties
         filtered_props = {}
-        for prop_key, value in props.items():
+        for property_name, value in props.items():
             if (
-                prop_key not in ["collapsed", "card-last-interval", "card-repeats"]
+                property_name not in ["collapsed", "card-last-interval", "card-repeats"]
                 and value
             ):
                 if isinstance(value, list):
-                    filtered_props[prop_key] = ", ".join(str(v) for v in value)
+                    filtered_props[property_name] = ", ".join(str(v) for v in value)
                 else:
-                    filtered_props[prop_key] = str(value)
+                    filtered_props[property_name] = str(value)
 
         if not filtered_props:
             return "None"
@@ -179,7 +179,7 @@ async def get_page_links(page_identifier: str) -> List[TextContent]:
             def sort_pages(page):
                 return (-page["reference_count"], page["name"].lower())
 
-            # Sort using a different approach to avoid 'key' parameter
+            # Sort using a different approach to avoid sort parameter
             page_sorts = [(sort_pages(page), page) for page in enriched_pages]
             page_sorts.sort()
             enriched_pages = [page for _, page in page_sorts]

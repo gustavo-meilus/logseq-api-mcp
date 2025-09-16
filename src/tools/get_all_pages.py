@@ -83,7 +83,7 @@ async def get_all_pages(
             def get_page_name(page):
                 return page.get("originalName", page.get("name", "")).lower()
 
-            # Sort using a different approach to avoid 'key' parameter
+            # Sort using a different approach to avoid sort parameter
             page_names = [(get_page_name(page), page) for page in pages]
             page_names.sort()
             sorted_pages = [page for _, page in page_names]

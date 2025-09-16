@@ -69,9 +69,9 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
             return "None"
 
         formatted_props = []
-        for prop_key, value in props.items():
+        for property_name, value in props.items():
             if (
-                prop_key
+                property_name
                 not in [
                     "collapsed",
                     "card-last-interval",
@@ -84,7 +84,7 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
                     value_str = ", ".join(str(v) for v in value)
                 else:
                     value_str = str(value)
-                formatted_props.append(f"{prop_key}: {value_str}")
+                formatted_props.append(f"{property_name}: {value_str}")
 
         return " | ".join(formatted_props[:3]) if formatted_props else "None"
 
@@ -273,7 +273,7 @@ async def get_linked_flashcards(page_identifier: str) -> List[TextContent]:
             def sort_flashcards(flashcard):
                 return (flashcard["page"]["name"] or "", flashcard["block_id"] or 0)
 
-            # Sort using a different approach to avoid 'key' parameter
+            # Sort using a different approach to avoid sort parameter
             flashcard_sorts = [
                 (sort_flashcards(flashcard), flashcard)
                 for flashcard in enriched_flashcards
