@@ -1,24 +1,24 @@
-"""Tests for append_block_in_page tool."""
+"""Tests for get_page_blocks tool."""
 
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.tools.append_block_in_page import append_block_in_page
+from src.tools.get_page_blocks import get_page_blocks
 
 
-class TestAppendBlockInPage:
-    """Test cases for append_block_in_page function."""
+class TestGetPageBlocks:
+    """Test cases for get_page_blocks function."""
 
     @pytest.mark.asyncio
-    async def test_append_block_success_basic(
-        self, mock_env_vars, mock_aiohttp_session
+    async def test_get_page_blocks_success(
+        self, mock_env_vars, mock_aiohttp_session, sample_block_data
     ):
-        """Test successful block append with basic parameters."""
+        """Test successful page blocks retrieval."""
         # Setup mock response
         mock_response = MagicMock()
         mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"success": True})
+        mock_response.json = AsyncMock(return_value=[sample_block_data])
 
         # Setup session mock
         mock_session_instance = AsyncMock()
@@ -27,21 +27,19 @@ class TestAppendBlockInPage:
             mock_session_instance
         )
 
-        result = await append_block_in_page("Test Page", "Test content")
+        result = await get_page_blocks("Test Page")
 
         assert len(result) == 1
-        assert "✅ **BLOCK APPENDED SUCCESSFULLY**" in result[0].text
+        assert "🌳 **PAGE BLOCKS TREE STRUCTURE**" in result[0].text
         assert "Test Page" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_append_block_with_positioning(
-        self, mock_env_vars, mock_aiohttp_session
-    ):
-        """Test block append with positioning options."""
+    async def test_get_page_blocks_empty(self, mock_env_vars, mock_aiohttp_session):
+        """Test page blocks retrieval with empty result."""
         # Setup mock response
         mock_response = MagicMock()
         mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"success": True})
+        mock_response.json = AsyncMock(return_value=[])
 
         # Setup session mock
         mock_session_instance = AsyncMock()
@@ -50,18 +48,16 @@ class TestAppendBlockInPage:
             mock_session_instance
         )
 
-        result = await append_block_in_page(
-            "Test Page", "Test content", before="block-uuid-123", is_page_block=True
-        )
+        result = await get_page_blocks("Test Page")
 
         assert len(result) == 1
-        assert "✅ **BLOCK APPENDED SUCCESSFULLY**" in result[0].text
-        assert "📍 Positioned before block: block-uuid-123" in result[0].text
-        assert "📍 Block type: Page-level block" in result[0].text
+        assert "✅ Page 'Test Page' has no blocks" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_append_block_http_error(self, mock_env_vars, mock_aiohttp_session):
-        """Test block append with HTTP error."""
+    async def test_get_page_blocks_http_error(
+        self, mock_env_vars, mock_aiohttp_session
+    ):
+        """Test page blocks retrieval with HTTP error."""
         # Setup mock response
         mock_response = MagicMock()
         mock_response.status = 500
@@ -73,14 +69,14 @@ class TestAppendBlockInPage:
             mock_session_instance
         )
 
-        result = await append_block_in_page("Test Page", "Test content")
+        result = await get_page_blocks("Test Page")
 
         assert len(result) == 1
-        assert "❌ Failed to append block: HTTP 500" in result[0].text
+        assert "❌ Failed to fetch page blocks: HTTP 500" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_append_block_exception(self, mock_env_vars, mock_aiohttp_session):
-        """Test block append with exception."""
+    async def test_get_page_blocks_exception(self, mock_env_vars, mock_aiohttp_session):
+        """Test page blocks retrieval with exception."""
         # Setup session mock to raise exception
         mock_session_instance = AsyncMock()
         mock_session_instance.post.side_effect = Exception("Network error")
@@ -88,7 +84,7 @@ class TestAppendBlockInPage:
             mock_session_instance
         )
 
-        result = await append_block_in_page("Test Page", "Test content")
+        result = await get_page_blocks("Test Page")
 
         assert len(result) == 1
-        assert "❌ Error appending block: Network error" in result[0].text
+        assert "❌ Error fetching page blocks: Network error" in result[0].text

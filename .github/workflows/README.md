@@ -117,7 +117,7 @@ To run the same checks locally:
 
 ```bash
 # Install dependencies
-uv sync --dev
+uv sync --dev --group test
 
 # Run tests with coverage
 uv run pytest tests/ --cov=src/tools --cov-report=html

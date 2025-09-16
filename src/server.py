@@ -1,5 +1,6 @@
 from mcp.server.fastmcp import FastMCP
-from registry import register_all_tools
+
+from .registry import register_all_tools
 
 # Create an MCP server
 mcp = FastMCP("Logseq API")

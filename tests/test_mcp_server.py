@@ -1,124 +1,49 @@
-#!/usr/bin/env python3
+"""Tests for MCP server functionality."""
 
-import subprocess
-import sys
-from pathlib import Path
-from typing import Set
+from src.registry import register_all_tools
+from src.server import mcp
 
 
-def get_expected_tools() -> Set[str]:
-    """Get the list of expected tools from the tools/__init__.py file."""
-    tools_init_path = Path("src/tools/__init__.py")
+class TestMCPServer:
+    """Test cases for MCP server functionality."""
 
-    if not tools_init_path.exists():
-        raise FileNotFoundError("Tools __init__.py not found")
+    def test_server_initialization(self):
+        """Test that the MCP server can be initialized."""
+        assert mcp is not None
+        assert hasattr(mcp, "list_tools")
 
-    content = tools_init_path.read_text()
+    def test_tool_registration(self):
+        """Test that all tools are properly registered."""
+        # Get the list of registered tools
+        tools = mcp.list_tools()
 
-    # Extract the __all__ list
-    lines = content.split("\n")
-    in_all_section = False
-    expected_tools = set()
+        # Check that we have the expected number of tools
+        assert len(tools) >= 9
 
-    for line in lines:
-        line = line.strip()
-        if line.startswith("__all__"):
-            in_all_section = True
-            continue
-        if in_all_section:
-            if line == "]":
-                break
-            if line.startswith('"') and line.endswith('",'):
-                tool_name = line.strip('"",')
-                expected_tools.add(tool_name)
+        # Check for specific tools
+        tool_names = [tool.name for tool in tools]
+        expected_tools = [
+            "append_block_in_page",
+            "create_page",
+            "edit_block",
+            "get_all_pages",
+            "get_page_blocks",
+            "get_block_content",
+            "get_all_page_content",
+            "get_page_links",
+            "get_linked_flashcards",
+        ]
 
-    return expected_tools
+        for expected_tool in expected_tools:
+            assert expected_tool in tool_names, (
+                f"Tool {expected_tool} not found in registered tools"
+            )
 
+    def test_register_all_tools_function(self):
+        """Test the register_all_tools function."""
+        # This should not raise any exceptions
+        register_all_tools(mcp)
 
-def test_mcp_server() -> dict:
-    """Test the MCP server using mcp dev command with process timeout."""
-
-    try:
-        # Test server with a process timeout to check if it starts properly
-        result = subprocess.run(
-            ["uv", "run", "mcp", "dev", "src/server.py"],
-            capture_output=True,
-            text=True,
-            timeout=8,  # Server should start within 8 seconds
-            cwd=Path.cwd(),
-        )
-
-        # If we reach here, the server ran and exited normally
-        return {
-            "success": True,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "returncode": result.returncode,
-        }
-
-    except subprocess.TimeoutExpired:
-        # This is actually expected - the server should keep running
-        # If we timeout, it means the server started and is running
-        return {
-            "success": True,
-            "stdout": "Server started and running (timeout as expected)",
-            "stderr": "",
-            "note": "Server timeout indicates successful startup",
-        }
-    except Exception as e:
-        return {"success": False, "error": f"Test execution failed: {str(e)}"}
-
-
-def get_tools_from_module() -> Set[str]:
-    """Get available tools by importing the tools module directly."""
-    import sys
-
-    # Add src to path so we can import tools
-    sys.path.insert(0, str(Path("src").resolve()))
-
-    try:
-        import tools
-
-        return set(tools.__all__)
-    except Exception as e:
-        raise RuntimeError(f"Failed to import tools module: {e}")
-    finally:
-        # Remove src from path
-        if str(Path("src").resolve()) in sys.path:
-            sys.path.remove(str(Path("src").resolve()))
-
-
-def main():
-    """Main test function."""
-    print("🔍 Testing MCP Server Health and Tools...")
-
-    # Get expected tools from the tools module directly (dynamic discovery)
-    try:
-        discovered_tools = get_tools_from_module()
-        print(f"🔧 Discovered tools (auto-discovery): {sorted(discovered_tools)}")
-    except Exception as e:
-        print(f"❌ Failed to discover tools: {e}")
-        sys.exit(1)
-
-    # Test server health
-    print("\n🏥 Testing server health...")
-    result = test_mcp_server()
-
-    if not result["success"]:
-        print(f"❌ Server health check failed: {result['error']}")
-        if result.get("stdout"):
-            print(f"   stdout: {result['stdout']}")
-        sys.exit(1)
-
-    print("✅ Server started and responded successfully")
-    print("✅ Dynamic tool discovery working correctly")
-
-    # Summary
-    print("\n🎉 MCP Server test completed successfully!")
-    print(f"   📊 Tools auto-discovered: {len(discovered_tools)}")
-    print("   🏥 Server health: OK")
-    print("   🔄 Dynamic discovery: OK")
-
-
-if __name__ == "__main__":
-    main()
+        # Verify tools are still registered
+        tools = mcp.list_tools()
+        assert len(tools) >= 9

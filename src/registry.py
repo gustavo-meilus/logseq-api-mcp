@@ -1,5 +1,6 @@
 from mcp.server.fastmcp import FastMCP
-import tools
+
+from . import tools
 
 
 def register_all_tools(mcp_server: FastMCP) -> None:

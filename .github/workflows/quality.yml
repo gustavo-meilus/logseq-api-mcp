@@ -29,7 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --dev
+          uv sync --dev --group test
 
       - name: Run Ruff linter
         run: |
@@ -99,7 +99,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --dev
+          uv sync --dev --group test
 
       - name: Check for vulnerable dependencies
         run: |
@@ -141,7 +141,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --dev
+          uv sync --dev --group test
 
       - name: Run tests with coverage
         run: |

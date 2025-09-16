@@ -1,24 +1,24 @@
-"""Tests for edit_block tool."""
+"""Tests for get_all_pages tool."""
 
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.tools.edit_block import edit_block
+from src.tools.get_all_pages import get_all_pages
 
 
-class TestEditBlock:
-    """Test cases for edit_block function."""
+class TestGetAllPages:
+    """Test cases for get_all_pages function."""
 
     @pytest.mark.asyncio
-    async def test_edit_block_success_content(
-        self, mock_env_vars, mock_aiohttp_session
+    async def test_get_all_pages_success(
+        self, mock_env_vars, mock_aiohttp_session, sample_page_data
     ):
-        """Test successful block edit with content."""
+        """Test successful pages retrieval."""
         # Setup mock response
         mock_response = MagicMock()
         mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"success": True})
+        mock_response.json = AsyncMock(return_value=[sample_page_data])
 
         # Setup session mock
         mock_session_instance = AsyncMock()
@@ -27,21 +27,21 @@ class TestEditBlock:
             mock_session_instance
         )
 
-        result = await edit_block("block-uuid-123", content="Updated content")
+        result = await get_all_pages()
 
         assert len(result) == 1
-        assert "✅ **BLOCK EDITED SUCCESSFULLY**" in result[0].text
-        assert "📝 **UPDATED CONTENT:**" in result[0].text
+        assert "📊 **LOGSEQ PAGES LISTING**" in result[0].text
+        assert "Test Page" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_edit_block_success_properties(
-        self, mock_env_vars, mock_aiohttp_session
+    async def test_get_all_pages_with_limits(
+        self, mock_env_vars, mock_aiohttp_session, sample_page_data
     ):
-        """Test successful block edit with properties."""
+        """Test pages retrieval with start/end limits."""
         # Setup mock response
         mock_response = MagicMock()
         mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"success": True})
+        mock_response.json = AsyncMock(return_value=[sample_page_data])
 
         # Setup session mock
         mock_session_instance = AsyncMock()
@@ -50,22 +50,18 @@ class TestEditBlock:
             mock_session_instance
         )
 
-        properties = {"status": "completed", "priority": "high"}
-        result = await edit_block("block-uuid-123", properties=properties)
+        result = await get_all_pages(start=0, end=1)
 
         assert len(result) == 1
-        assert "✅ **BLOCK EDITED SUCCESSFULLY**" in result[0].text
-        assert "⚙️ **UPDATED PROPERTIES:**" in result[0].text
+        assert "showing indices 0-1" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_edit_block_success_options(
-        self, mock_env_vars, mock_aiohttp_session
-    ):
-        """Test successful block edit with options."""
+    async def test_get_all_pages_empty(self, mock_env_vars, mock_aiohttp_session):
+        """Test pages retrieval with empty result."""
         # Setup mock response
         mock_response = MagicMock()
         mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"success": True})
+        mock_response.json = AsyncMock(return_value=[])
 
         # Setup session mock
         mock_session_instance = AsyncMock()
@@ -74,16 +70,14 @@ class TestEditBlock:
             mock_session_instance
         )
 
-        result = await edit_block(
-            "block-uuid-123", content="Updated content", cursor_position=10, focus=True
-        )
+        result = await get_all_pages()
 
         assert len(result) == 1
-        assert "✅ **BLOCK EDITED SUCCESSFULLY**" in result[0].text
+        assert "✅ No pages found in Logseq graph" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_edit_block_http_error(self, mock_env_vars, mock_aiohttp_session):
-        """Test block edit with HTTP error."""
+    async def test_get_all_pages_http_error(self, mock_env_vars, mock_aiohttp_session):
+        """Test pages retrieval with HTTP error."""
         # Setup mock response
         mock_response = MagicMock()
         mock_response.status = 500
@@ -95,14 +89,14 @@ class TestEditBlock:
             mock_session_instance
         )
 
-        result = await edit_block("block-uuid-123", content="Updated content")
+        result = await get_all_pages()
 
         assert len(result) == 1
-        assert "❌ Failed to edit block: HTTP 500" in result[0].text
+        assert "❌ Failed to fetch pages: HTTP 500" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_edit_block_exception(self, mock_env_vars, mock_aiohttp_session):
-        """Test block edit with exception."""
+    async def test_get_all_pages_exception(self, mock_env_vars, mock_aiohttp_session):
+        """Test pages retrieval with exception."""
         # Setup session mock to raise exception
         mock_session_instance = AsyncMock()
         mock_session_instance.post.side_effect = Exception("Network error")
@@ -110,7 +104,7 @@ class TestEditBlock:
             mock_session_instance
         )
 
-        result = await edit_block("block-uuid-123", content="Updated content")
+        result = await get_all_pages()
 
         assert len(result) == 1
-        assert "❌ Error editing block: Network error" in result[0].text
+        assert "❌ Error fetching pages: Network error" in result[0].text

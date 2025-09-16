@@ -1,1 +1,2 @@
-# Test package for the Logseq API MCP server
+# Test package for logseq-api-mcp
+
