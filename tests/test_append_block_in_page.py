@@ -2,7 +2,7 @@
 Unit tests for append_block_in_page tool.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from mcp.types import TextContent

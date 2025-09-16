@@ -2,7 +2,6 @@
 Comprehensive test runner for all Logseq API MCP server tools.
 """
 
-import asyncio
 import sys
 from pathlib import Path
 

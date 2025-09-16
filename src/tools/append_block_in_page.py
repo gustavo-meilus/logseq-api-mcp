@@ -73,7 +73,7 @@ async def append_block_in_page(
                     return [
                         TextContent(
                             type="text",
-                            text=f"❌ Failed to append block: No response from Logseq API",
+                            text="❌ Failed to append block: No response from Logseq API",
                         )
                     ]
 

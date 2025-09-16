@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 from dotenv import load_dotenv
@@ -85,7 +85,7 @@ async def edit_block(
                     return [
                         TextContent(
                             type="text",
-                            text=f"❌ Failed to edit block: No response from Logseq API",
+                            text="❌ Failed to edit block: No response from Logseq API",
                         )
                     ]
 
@@ -99,7 +99,7 @@ async def edit_block(
                 # Add edit details
                 edit_details = []
                 if content is not None:
-                    edit_details.append(f"📝 Content updated")
+                    edit_details.append("📝 Content updated")
                 if properties is not None:
                     edit_details.append(
                         f"⚙️ Properties updated ({len(properties)} items)"
@@ -130,7 +130,7 @@ async def edit_block(
                     output_lines.extend(
                         [
                             "📝 **UPDATED CONTENT:**",
-                            f"```",
+                            "```",
                             content_preview,
                             "```",
                             "",
@@ -151,7 +151,6 @@ async def edit_block(
                 if isinstance(result, dict):
                     result_id = result.get("id", "N/A")
                     result_uuid = result.get("uuid", block_identity)
-                    result_content = result.get("content", "")
 
                     if result_id != "N/A" or result_uuid != block_identity:
                         output_lines.extend(

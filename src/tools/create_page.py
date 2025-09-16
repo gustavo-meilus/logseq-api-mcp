@@ -66,7 +66,7 @@ async def create_page(
                     return [
                         TextContent(
                             type="text",
-                            text=f"❌ Failed to create page: No response from Logseq API",
+                            text="❌ Failed to create page: No response from Logseq API",
                         )
                     ]
 
