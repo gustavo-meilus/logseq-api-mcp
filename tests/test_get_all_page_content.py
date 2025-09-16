@@ -15,15 +15,14 @@ class TestGetAllPageContent:
         self, mock_env_vars, mock_aiohttp_session
     ):
         """Test successful all page content retrieval."""
-        sample_content = {
-            "page": {"id": 123, "name": "Test Page", "uuid": "page-uuid-123"},
-            "blocks": [
-                {"id": 456, "content": "Test content", "uuid": "block-uuid-456"}
-            ],
-            "linkedPages": [
-                {"id": 789, "name": "Linked Page", "uuid": "page-uuid-789"}
-            ],
-        }
+        sample_content = [
+            {
+                "id": 456,
+                "content": "Test content",
+                "uuid": "block-uuid-456",
+                "page": {"id": 123, "name": "Test Page", "uuid": "page-uuid-123"},
+            }
+        ]
 
         # Setup mock responses for both API calls
         mock_content_response = MagicMock()
@@ -35,19 +34,24 @@ class TestGetAllPageContent:
         mock_links_response.json = AsyncMock(return_value=[])
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.side_effect = [
-            mock_content_response,
-            mock_links_response,
+        # Create separate mock contexts for each call
+        mock_context1 = MagicMock()
+        mock_context1.__aenter__ = AsyncMock(return_value=mock_content_response)
+        mock_context1.__aexit__ = AsyncMock(return_value=None)
+
+        mock_context2 = MagicMock()
+        mock_context2.__aenter__ = AsyncMock(return_value=mock_links_response)
+        mock_context2.__aexit__ = AsyncMock(return_value=None)
+
+        mock_aiohttp_session._session_instance.post.side_effect = [
+            mock_context1,
+            mock_context2,
         ]
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
 
         result = await get_all_page_content("Test Page")
 
         assert len(result) == 1
-        assert "📄 **COMPREHENSIVE PAGE CONTENT**" in result[0].text
+        assert "📄 **COMPREHENSIVE CONTENT:**" in result[0].text
         assert "Test Page" in result[0].text
 
     @pytest.mark.asyncio
@@ -60,16 +64,15 @@ class TestGetAllPageContent:
         mock_response.status = 500
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
+        mock_context = MagicMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+        mock_aiohttp_session._session_instance.post.return_value = mock_context
 
         result = await get_all_page_content("Test Page")
 
         assert len(result) == 1
-        assert "❌ Failed to fetch page content: HTTP 500" in result[0].text
+        assert "❌ Failed to fetch page blocks: 500" in result[0].text
 
     @pytest.mark.asyncio
     async def test_get_all_page_content_exception(
@@ -77,10 +80,8 @@ class TestGetAllPageContent:
     ):
         """Test all page content retrieval with exception."""
         # Setup session mock to raise exception
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.side_effect = Exception("Network error")
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._session_instance.post.side_effect = Exception(
+            "Network error"
         )
 
         result = await get_all_page_content("Test Page")

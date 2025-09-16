@@ -21,16 +21,15 @@ class TestGetBlockContent:
         mock_response.json = AsyncMock(return_value=sample_block_data)
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
+        mock_context = MagicMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+        mock_aiohttp_session._session_instance.post.return_value = mock_context
 
         result = await get_block_content("block-uuid-456")
 
         assert len(result) == 1
-        assert "📋 **BLOCK CONTENT DETAILS**" in result[0].text
+        assert "🔍 **MAIN BLOCK**" in result[0].text
         assert "Test block content" in result[0].text
 
     @pytest.mark.asyncio
@@ -43,16 +42,15 @@ class TestGetBlockContent:
         mock_response.status = 500
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
+        mock_context = MagicMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+        mock_aiohttp_session._session_instance.post.return_value = mock_context
 
         result = await get_block_content("block-uuid-456")
 
         assert len(result) == 1
-        assert "❌ Failed to fetch block content: HTTP 500" in result[0].text
+        assert "❌ Block with UUID 'block-uuid-456' not found" in result[0].text
 
     @pytest.mark.asyncio
     async def test_get_block_content_exception(
@@ -60,10 +58,8 @@ class TestGetBlockContent:
     ):
         """Test block content retrieval with exception."""
         # Setup session mock to raise exception
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.side_effect = Exception("Network error")
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._session_instance.post.side_effect = Exception(
+            "Network error"
         )
 
         result = await get_block_content("block-uuid-456")

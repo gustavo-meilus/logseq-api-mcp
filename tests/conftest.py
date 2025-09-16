@@ -22,8 +22,27 @@ def mock_env_vars():
 @pytest.fixture
 def mock_aiohttp_session():
     """Mock aiohttp ClientSession."""
-    with patch("aiohttp.ClientSession") as mock_session:
-        yield mock_session
+    with patch("aiohttp.ClientSession") as mock_session_class:
+        # Create a mock session instance
+        mock_session_instance = MagicMock()
+
+        # Mock the session class to return our instance when used as context manager
+        mock_session_class.return_value.__aenter__ = AsyncMock(
+            return_value=mock_session_instance
+        )
+        mock_session_class.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        # Create a mock post context manager
+        mock_post_context = MagicMock()
+
+        # Make the post method return the context manager directly
+        mock_session_instance.post.return_value = mock_post_context
+
+        # Store the session instance and post context for easy access in tests
+        mock_session_class._session_instance = mock_session_instance
+        mock_session_class._post_context = mock_post_context
+
+        yield mock_session_class
 
 
 @pytest.fixture

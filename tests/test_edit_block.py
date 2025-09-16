@@ -21,11 +21,10 @@ class TestEditBlock:
         mock_response.json = AsyncMock(return_value={"success": True})
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await edit_block("block-uuid-123", content="Updated content")
 
@@ -44,11 +43,10 @@ class TestEditBlock:
         mock_response.json = AsyncMock(return_value={"success": True})
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         properties = {"status": "completed", "priority": "high"}
         result = await edit_block("block-uuid-123", properties=properties)
@@ -68,11 +66,10 @@ class TestEditBlock:
         mock_response.json = AsyncMock(return_value={"success": True})
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await edit_block(
             "block-uuid-123", content="Updated content", cursor_position=10, focus=True
@@ -89,11 +86,10 @@ class TestEditBlock:
         mock_response.status = 500
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await edit_block("block-uuid-123", content="Updated content")
 
@@ -104,10 +100,8 @@ class TestEditBlock:
     async def test_edit_block_exception(self, mock_env_vars, mock_aiohttp_session):
         """Test block edit with exception."""
         # Setup session mock to raise exception
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.side_effect = Exception("Network error")
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._session_instance.post.side_effect = Exception(
+            "Network error"
         )
 
         result = await edit_block("block-uuid-123", content="Updated content")

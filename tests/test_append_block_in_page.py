@@ -21,11 +21,10 @@ class TestAppendBlockInPage:
         mock_response.json = AsyncMock(return_value={"success": True})
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await append_block_in_page("Test Page", "Test content")
 
@@ -44,11 +43,10 @@ class TestAppendBlockInPage:
         mock_response.json = AsyncMock(return_value={"success": True})
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await append_block_in_page(
             "Test Page", "Test content", before="block-uuid-123", is_page_block=True
@@ -67,11 +65,10 @@ class TestAppendBlockInPage:
         mock_response.status = 500
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await append_block_in_page("Test Page", "Test content")
 
@@ -82,10 +79,8 @@ class TestAppendBlockInPage:
     async def test_append_block_exception(self, mock_env_vars, mock_aiohttp_session):
         """Test block append with exception."""
         # Setup session mock to raise exception
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.side_effect = Exception("Network error")
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._session_instance.post.side_effect = Exception(
+            "Network error"
         )
 
         result = await append_block_in_page("Test Page", "Test content")

@@ -21,11 +21,10 @@ class TestGetPageBlocks:
         mock_response.json = AsyncMock(return_value=[sample_block_data])
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await get_page_blocks("Test Page")
 
@@ -42,11 +41,10 @@ class TestGetPageBlocks:
         mock_response.json = AsyncMock(return_value=[])
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await get_page_blocks("Test Page")
 
@@ -63,11 +61,10 @@ class TestGetPageBlocks:
         mock_response.status = 500
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await get_page_blocks("Test Page")
 
@@ -78,10 +75,8 @@ class TestGetPageBlocks:
     async def test_get_page_blocks_exception(self, mock_env_vars, mock_aiohttp_session):
         """Test page blocks retrieval with exception."""
         # Setup session mock to raise exception
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.side_effect = Exception("Network error")
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._session_instance.post.side_effect = Exception(
+            "Network error"
         )
 
         result = await get_page_blocks("Test Page")

@@ -25,20 +25,24 @@ class TestGetPageLinks:
         mock_pages_response.json = AsyncMock(return_value=[sample_page_data])
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
         # Mock both post calls
-        mock_session_instance.post.return_value.__aenter__.side_effect = [
-            mock_links_response,
-            mock_pages_response,
+        mock_context1 = MagicMock()
+        mock_context1.__aenter__ = AsyncMock(return_value=mock_links_response)
+        mock_context1.__aexit__ = AsyncMock(return_value=None)
+
+        mock_context2 = MagicMock()
+        mock_context2.__aenter__ = AsyncMock(return_value=mock_pages_response)
+        mock_context2.__aexit__ = AsyncMock(return_value=None)
+
+        mock_aiohttp_session._session_instance.post.side_effect = [
+            mock_context1,
+            mock_context2,
         ]
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
 
         result = await get_page_links("Test Page")
 
         assert len(result) == 1
-        assert "🔗 **PAGE LINKS**" in result[0].text
+        assert "🔗 **PAGE LINKS ANALYSIS**" in result[0].text
         assert "Test Page" in result[0].text
 
     @pytest.mark.asyncio
@@ -54,14 +58,18 @@ class TestGetPageLinks:
         mock_pages_response.json = AsyncMock(return_value=[])
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.side_effect = [
-            mock_links_response,
-            mock_pages_response,
+        mock_context1 = MagicMock()
+        mock_context1.__aenter__ = AsyncMock(return_value=mock_links_response)
+        mock_context1.__aexit__ = AsyncMock(return_value=None)
+
+        mock_context2 = MagicMock()
+        mock_context2.__aenter__ = AsyncMock(return_value=mock_pages_response)
+        mock_context2.__aexit__ = AsyncMock(return_value=None)
+
+        mock_aiohttp_session._session_instance.post.side_effect = [
+            mock_context1,
+            mock_context2,
         ]
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
 
         result = await get_page_links("Test Page")
 
@@ -76,11 +84,10 @@ class TestGetPageLinks:
         mock_response.status = 500
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
+        mock_context = MagicMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+        mock_aiohttp_session._session_instance.post.return_value = mock_context
 
         result = await get_page_links("Test Page")
 
@@ -91,10 +98,8 @@ class TestGetPageLinks:
     async def test_get_page_links_exception(self, mock_env_vars, mock_aiohttp_session):
         """Test page links retrieval with exception."""
         # Setup session mock to raise exception
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.side_effect = Exception("Network error")
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._session_instance.post.side_effect = Exception(
+            "Network error"
         )
 
         result = await get_page_links("Test Page")

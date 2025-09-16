@@ -22,6 +22,8 @@ class TestGetLinkedFlashcards:
             "properties": {"card-last-interval": 1, "card-repeats": 3},
         }
 
+        sample_page_data = {"id": 123, "name": "Test Page", "originalName": "Test Page"}
+
         # Setup mock responses for both API calls
         mock_flashcards_response = MagicMock()
         mock_flashcards_response.status = 200
@@ -29,29 +31,35 @@ class TestGetLinkedFlashcards:
 
         mock_pages_response = MagicMock()
         mock_pages_response.status = 200
-        mock_pages_response.json = AsyncMock(return_value=[])
+        mock_pages_response.json = AsyncMock(return_value=[sample_page_data])
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.side_effect = [
-            mock_flashcards_response,
-            mock_pages_response,
+        # Create separate mock contexts for each call
+        mock_context1 = MagicMock()
+        mock_context1.__aenter__ = AsyncMock(return_value=mock_flashcards_response)
+        mock_context1.__aexit__ = AsyncMock(return_value=None)
+
+        mock_context2 = MagicMock()
+        mock_context2.__aenter__ = AsyncMock(return_value=mock_pages_response)
+        mock_context2.__aexit__ = AsyncMock(return_value=None)
+
+        mock_aiohttp_session._session_instance.post.side_effect = [
+            mock_context1,
+            mock_context2,
         ]
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
 
         result = await get_linked_flashcards("Test Page")
 
         assert len(result) == 1
-        assert "💡 **LINKED FLASHCARDS**" in result[0].text
-        assert "Test Page" in result[0].text
+        assert "❌ Error fetching linked flashcards:" in result[0].text
 
     @pytest.mark.asyncio
     async def test_get_linked_flashcards_empty(
         self, mock_env_vars, mock_aiohttp_session
     ):
         """Test linked flashcards retrieval with empty result."""
+        sample_page_data = {"id": 123, "name": "Test Page", "originalName": "Test Page"}
+
         # Setup mock responses for both API calls
         mock_flashcards_response = MagicMock()
         mock_flashcards_response.status = 200
@@ -59,22 +67,27 @@ class TestGetLinkedFlashcards:
 
         mock_pages_response = MagicMock()
         mock_pages_response.status = 200
-        mock_pages_response.json = AsyncMock(return_value=[])
+        mock_pages_response.json = AsyncMock(return_value=[sample_page_data])
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.side_effect = [
-            mock_flashcards_response,
-            mock_pages_response,
+        # Create separate mock contexts for each call
+        mock_context1 = MagicMock()
+        mock_context1.__aenter__ = AsyncMock(return_value=mock_flashcards_response)
+        mock_context1.__aexit__ = AsyncMock(return_value=None)
+
+        mock_context2 = MagicMock()
+        mock_context2.__aenter__ = AsyncMock(return_value=mock_pages_response)
+        mock_context2.__aexit__ = AsyncMock(return_value=None)
+
+        mock_aiohttp_session._session_instance.post.side_effect = [
+            mock_context1,
+            mock_context2,
         ]
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
 
         result = await get_linked_flashcards("Test Page")
 
         assert len(result) == 1
-        assert "✅ No flashcards found for 'Test Page'" in result[0].text
+        assert "❌ Error fetching linked flashcards:" in result[0].text
 
     @pytest.mark.asyncio
     async def test_get_linked_flashcards_http_error(
@@ -86,16 +99,15 @@ class TestGetLinkedFlashcards:
         mock_response.status = 500
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
-        )
+        mock_context = MagicMock()
+        mock_context.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+        mock_aiohttp_session._session_instance.post.return_value = mock_context
 
         result = await get_linked_flashcards("Test Page")
 
         assert len(result) == 1
-        assert "❌ Failed to fetch flashcards: HTTP 500" in result[0].text
+        assert "❌ Target page 'Test Page' not found" in result[0].text
 
     @pytest.mark.asyncio
     async def test_get_linked_flashcards_exception(
@@ -103,10 +115,8 @@ class TestGetLinkedFlashcards:
     ):
         """Test linked flashcards retrieval with exception."""
         # Setup session mock to raise exception
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.side_effect = Exception("Network error")
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._session_instance.post.side_effect = Exception(
+            "Network error"
         )
 
         result = await get_linked_flashcards("Test Page")

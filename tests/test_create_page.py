@@ -19,11 +19,10 @@ class TestCreatePage:
         mock_response.json = AsyncMock(return_value={"success": True})
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await create_page("Test Page")
 
@@ -42,18 +41,17 @@ class TestCreatePage:
         mock_response.json = AsyncMock(return_value={"success": True})
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         properties = {"status": "active", "type": "note"}
         result = await create_page("Test Page", properties=properties)
 
         assert len(result) == 1
         assert "✅ **PAGE CREATED SUCCESSFULLY**" in result[0].text
-        assert "⚙️ **PAGE PROPERTIES:**" in result[0].text
+        assert "⚙️ Properties set: 2 items" in result[0].text
 
     @pytest.mark.asyncio
     async def test_create_page_with_format(self, mock_env_vars, mock_aiohttp_session):
@@ -64,11 +62,10 @@ class TestCreatePage:
         mock_response.json = AsyncMock(return_value={"success": True})
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await create_page("Test Page", format="markdown")
 
@@ -84,11 +81,10 @@ class TestCreatePage:
         mock_response.status = 500
 
         # Setup session mock
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.return_value.__aenter__.return_value = mock_response
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._post_context.__aenter__ = AsyncMock(
+            return_value=mock_response
         )
+        mock_aiohttp_session._post_context.__aexit__ = AsyncMock(return_value=None)
 
         result = await create_page("Test Page")
 
@@ -99,10 +95,8 @@ class TestCreatePage:
     async def test_create_page_exception(self, mock_env_vars, mock_aiohttp_session):
         """Test page creation with exception."""
         # Setup session mock to raise exception
-        mock_session_instance = AsyncMock()
-        mock_session_instance.post.side_effect = Exception("Network error")
-        mock_aiohttp_session.return_value.__aenter__.return_value = (
-            mock_session_instance
+        mock_aiohttp_session._session_instance.post.side_effect = Exception(
+            "Network error"
         )
 
         result = await create_page("Test Page")

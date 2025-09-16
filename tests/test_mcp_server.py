@@ -1,5 +1,7 @@
 """Tests for MCP server functionality."""
 
+import pytest
+
 from src.registry import register_all_tools
 from src.server import mcp
 
@@ -12,10 +14,11 @@ class TestMCPServer:
         assert mcp is not None
         assert hasattr(mcp, "list_tools")
 
-    def test_tool_registration(self):
+    @pytest.mark.asyncio
+    async def test_tool_registration(self):
         """Test that all tools are properly registered."""
         # Get the list of registered tools
-        tools = mcp.list_tools()
+        tools = await mcp.list_tools()
 
         # Check that we have the expected number of tools
         assert len(tools) >= 9
@@ -39,11 +42,12 @@ class TestMCPServer:
                 f"Tool {expected_tool} not found in registered tools"
             )
 
-    def test_register_all_tools_function(self):
+    @pytest.mark.asyncio
+    async def test_register_all_tools_function(self):
         """Test the register_all_tools function."""
         # This should not raise any exceptions
         register_all_tools(mcp)
 
         # Verify tools are still registered
-        tools = mcp.list_tools()
+        tools = await mcp.list_tools()
         assert len(tools) >= 9
