@@ -3,9 +3,6 @@ name: Advanced Quality & Security
 on:
   pull_request:
     branches: [main, develop]
-  schedule:
-    # Run security checks daily at 3 AM UTC
-    - cron: "0 3 * * *"
   workflow_dispatch:
 
 jobs:
