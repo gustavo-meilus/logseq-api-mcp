@@ -1,4 +1,4 @@
-"""v1.0.1 tool surface contract."""
+"""Tool surface contract — updated for v1.1.0 live context tools."""
 
 from src import tools
 
@@ -14,6 +14,10 @@ _EXPECTED = sorted(
         "get_all_page_content",
         "get_all_pages",
         "get_block_content",
+        "get_current_block",
+        "get_current_graph",
+        "get_current_page",
+        "get_editing_selection",
         "get_linked_flashcards",
         "get_page_backlinks",
         "get_page_blocks",
@@ -24,12 +28,13 @@ _EXPECTED = sorted(
         "rename_page",
         "search",
         "set_block_properties",
+        "suggest_workspace",
         "update_block",
         "update_page",
     ]
 )
 
 
-def test_tools_surface_is_exactly_21():
+def test_tools_surface_is_exactly_26():
     assert sorted(tools.__all__) == _EXPECTED
-    assert len(tools.__all__) == 21
+    assert len(tools.__all__) == 26

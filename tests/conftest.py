@@ -236,6 +236,24 @@ class FakeLogseqClient:
         self.calls.append(("excluded_page_names", (), {"ttl_seconds": ttl_seconds}))
         return self.responses.get("excluded_page_names", frozenset())
 
+    # ── Live context ──────────────────────────────────────────────────────────
+
+    async def get_current_page(self) -> dict | None:
+        self.calls.append(("get_current_page", (), {}))
+        return self.responses.get("get_current_page")
+
+    async def get_current_block(self) -> dict | None:
+        self.calls.append(("get_current_block", (), {}))
+        return self.responses.get("get_current_block")
+
+    async def get_editing_selection(self) -> list[dict]:
+        self.calls.append(("get_editing_selection", (), {}))
+        return self.responses.get("get_editing_selection", [])
+
+    async def get_current_graph(self) -> dict:
+        self.calls.append(("get_current_graph", (), {}))
+        return self.responses.get("get_current_graph", {})
+
 
 @pytest.fixture
 def fake_client():

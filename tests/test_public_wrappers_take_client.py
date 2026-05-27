@@ -28,6 +28,12 @@ _WRAPPERS_TO_AUDIT = [
     "delete_block",
     "edit_block",
     "set_block_properties",
+    # Live context tools (v1.1.0)
+    "get_current_page",
+    "get_current_block",
+    "get_editing_selection",
+    "get_current_graph",
+    "suggest_workspace",
 ]
 
 
