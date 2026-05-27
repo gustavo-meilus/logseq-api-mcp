@@ -7,7 +7,7 @@ on:
 jobs:
   validate-tools:
     runs-on: ubuntu-latest
-    name: Validate Tool Count (21 standard tools)
+    name: Validate Tool Discovery
 
     steps:
       - uses: actions/checkout@v4
@@ -23,34 +23,35 @@ jobs:
       - name: Install dependencies
         run: uv sync --group test
 
-      - name: Verify 21 standard tools are registered
+      - name: Verify all tools are registered
         run: |
           uv run python -c "
           from src import tools
 
-          count = len(tools.__all__)
-          print(f'Standard tools discovered: {count}')
-          print(f'Tool list: {sorted(tools.__all__)}')
-
-          expected = [
+          expected = sorted([
               'append_block_in_page', 'create_page', 'delete_block', 'delete_page',
               'edit_block', 'find_pages_by_property', 'get_all_page_content',
-              'get_all_pages', 'get_block_content', 'get_linked_flashcards',
-              'get_page_backlinks', 'get_page_blocks',
+              'get_all_pages', 'get_block_content', 'get_current_block',
+              'get_current_graph', 'get_current_page', 'get_editing_selection',
+              'get_linked_flashcards', 'get_page_backlinks', 'get_page_blocks',
               'get_pages_from_namespace', 'get_pages_tree_from_namespace',
               'insert_nested_block', 'query', 'rename_page', 'search',
-              'set_block_properties', 'update_block', 'update_page',
-          ]
+              'set_block_properties', 'suggest_workspace', 'update_block', 'update_page',
+          ])
 
-          assert sorted(tools.__all__) == sorted(expected), \
-              f'Tool list mismatch.\nExpected: {sorted(expected)}\nFound: {sorted(tools.__all__)}'
-          assert len(tools.__all__) == 21
-          print(f'✅ All {count} standard tools present')
+          discovered = sorted(tools.__all__)
+          print(f'Tools discovered: {len(discovered)}')
+          print(f'Tool list: {discovered}')
+
+          assert discovered == expected, \
+              f'Tool list mismatch.\nExpected: {expected}\nFound: {discovered}'
+          assert len(discovered) == 26
+          print(f'All {len(discovered)} tools present')
           "
 
   validate-coverage:
     runs-on: ubuntu-latest
-    name: Coverage Gate (≥85%)
+    name: Coverage Gate (>=85%)
 
     steps:
       - uses: actions/checkout@v4
@@ -115,37 +116,32 @@ jobs:
     steps:
       - name: Summary
         run: |
-          echo "🔍 PR Validation Summary"
-          echo "========================"
-
           ok=true
 
           if [ "${{ needs.validate-tools.result }}" == "success" ]; then
-            echo "✅ Tool count: PASSED"
+            echo "Tool count: PASSED"
           else
-            echo "❌ Tool count: FAILED"
+            echo "Tool count: FAILED"
             ok=false
           fi
 
           if [ "${{ needs.validate-coverage.result }}" == "success" ]; then
-            echo "✅ Coverage ≥85%: PASSED"
+            echo "Coverage >=85%: PASSED"
           else
-            echo "❌ Coverage ≥85%: FAILED"
+            echo "Coverage >=85%: FAILED"
             ok=false
           fi
 
           if [ "${{ needs.validate-lint.result }}" == "success" ]; then
-            echo "✅ Lint & format: PASSED"
+            echo "Lint & format: PASSED"
           else
-            echo "❌ Lint & format: FAILED"
+            echo "Lint & format: FAILED"
             ok=false
           fi
 
           if [ "$ok" == "true" ]; then
-            echo ""
-            echo "🎉 PR validation passed — ready for review"
+            echo "PR validation passed"
           else
-            echo ""
-            echo "❌ PR validation failed — address issues before merging"
+            echo "PR validation failed"
             exit 1
           fi

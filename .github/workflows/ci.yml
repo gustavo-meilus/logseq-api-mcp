@@ -36,27 +36,29 @@ jobs:
       - name: Run all tests with coverage
         run: uv run pytest tests/ --cov=src --cov-report=term-missing --cov-fail-under=85
 
-      - name: Validate tool discovery (21 standard tools)
+      - name: Validate tool discovery
         run: |
           uv run python -c "
           from src import tools
 
-          print(f'Discovered {len(tools.__all__)} tools: {sorted(tools.__all__)}')
-
-          expected = [
+          expected = sorted([
               'append_block_in_page', 'create_page', 'delete_block', 'delete_page',
               'edit_block', 'find_pages_by_property', 'get_all_page_content',
-              'get_all_pages', 'get_block_content', 'get_linked_flashcards',
-              'get_page_backlinks', 'get_page_blocks',
+              'get_all_pages', 'get_block_content', 'get_current_block',
+              'get_current_graph', 'get_current_page', 'get_editing_selection',
+              'get_linked_flashcards', 'get_page_backlinks', 'get_page_blocks',
               'get_pages_from_namespace', 'get_pages_tree_from_namespace',
               'insert_nested_block', 'query', 'rename_page', 'search',
-              'set_block_properties', 'update_block', 'update_page',
-          ]
+              'set_block_properties', 'suggest_workspace', 'update_block', 'update_page',
+          ])
 
-          assert sorted(tools.__all__) == sorted(expected), \
-              f'Tool list mismatch.\nExpected: {sorted(expected)}\nFound: {sorted(tools.__all__)}'
-          assert len(tools.__all__) == 21
-          print('✅ All 21 standard tools discovered')
+          discovered = sorted(tools.__all__)
+          print(f'Discovered {len(discovered)} tools: {discovered}')
+
+          assert discovered == expected, \
+              f'Tool list mismatch.\nExpected: {expected}\nFound: {discovered}'
+          assert len(discovered) == 26
+          print('All 26 tools discovered')
           "
 
       - name: Upload coverage reports
@@ -95,8 +97,8 @@ jobs:
           uv run pip install dist/*.whl
           uv run python -c "
           from src import tools
-          print(f'✅ Package installation successful: {len(tools.__all__)} tools available')
-          assert len(tools.__all__) == 21
+          print(f'Package installation successful: {len(tools.__all__)} tools available')
+          assert len(tools.__all__) == 26
           "
 
   ci-summary:
@@ -107,28 +109,21 @@ jobs:
     steps:
       - name: CI Summary
         run: |
-          echo "🔍 CI Pipeline Summary"
-          echo "====================="
-
           if [ "${{ needs.test.result }}" == "success" ]; then
-            echo "✅ Tests: PASSED"
+            echo "Tests: PASSED"
           else
-            echo "❌ Tests: FAILED"
+            echo "Tests: FAILED"
           fi
 
           if [ "${{ needs.build-test.result }}" == "success" ] || [ "${{ needs.build-test.result }}" == "skipped" ]; then
-            echo "✅ Build: PASSED/SKIPPED"
+            echo "Build: PASSED/SKIPPED"
           else
-            echo "❌ Build: FAILED"
+            echo "Build: FAILED"
           fi
 
           if [ "${{ needs.test.result }}" == "success" ]; then
-            echo ""
-            echo "🎉 CI pipeline completed successfully!"
-            echo "✅ Code is ready for merge"
+            echo "CI pipeline completed successfully"
           else
-            echo ""
-            echo "❌ CI pipeline failed"
-            echo "Please address the issues before merging"
+            echo "CI pipeline failed"
             exit 1
           fi
