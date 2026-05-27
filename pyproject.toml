@@ -4,6 +4,9 @@ version = "1.0.1"
 description = "Model Context Protocol server for Logseq knowledge bases"
 readme = "README.md"
 requires-python = ">=3.11"
+[project.scripts]
+logseq-api-mcp = "src.server:main"
+
 dependencies = [
     "aiohttp>=3.13.4",
     "mcp[cli]>=1.23.0",

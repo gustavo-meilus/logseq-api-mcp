@@ -430,6 +430,50 @@ class LogseqClient:
         result = await self._call("logseq.Editor.editBlock", [block_uuid, options])
         return result or {}
 
+    # ── Live context (UI state) ───────────────────────────────────────────────
+
+    async def get_current_page(self) -> dict | None:
+        """Return the page currently open in the Logseq editor.
+
+        Returns:
+            Page dict, or None if no page is active.
+
+        Complexity: O(1).
+        """
+        return await self._call("logseq.Editor.getCurrentPage")
+
+    async def get_current_block(self) -> dict | None:
+        """Return the block where the cursor is currently positioned.
+
+        Returns:
+            Block dict, or None if no block is being edited.
+
+        Complexity: O(1).
+        """
+        return await self._call("logseq.Editor.getCurrentBlock")
+
+    async def get_editing_selection(self) -> list[dict]:
+        """Return the list of blocks currently selected in the editor.
+
+        Returns:
+            List of selected block dicts. Empty list if no selection.
+
+        Complexity: O(S) where S is selected block count.
+        """
+        result = await self._call("logseq.Editor.getEditingBlockSelection")
+        return result if result is not None else []
+
+    async def get_current_graph(self) -> dict:
+        """Return metadata for the currently active Logseq graph.
+
+        Returns:
+            Dict with 'name', 'path', and 'url' keys. Empty dict if unavailable.
+
+        Complexity: O(1).
+        """
+        result = await self._call("logseq.App.getCurrentGraph")
+        return result if result is not None else {}
+
     # ── Search & Query ────────────────────────────────────────────────────────
 
     async def search(self, query: str, options: dict | None = None) -> dict:

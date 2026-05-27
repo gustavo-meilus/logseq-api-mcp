@@ -20,5 +20,10 @@ if _config is not None:
     register_all_tools(mcp, _client, _config)
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Console script entry point for uvx / pip install."""
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()
