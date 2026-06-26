@@ -4,10 +4,21 @@ import os
 
 from mcp.server.fastmcp import FastMCP
 
-from .client.config import load_config
-from .client.logseq_client import LogseqClient
-from .logging_setup import setup_logging
-from .registry import register_all_tools
+try:
+    from .client.config import load_config
+    from .client.logseq_client import LogseqClient
+    from .logging_setup import setup_logging
+    from .registry import register_all_tools
+except ImportError:
+    # mcp dev loads files via importlib without package context (__package__ = None).
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.client.config import load_config  # type: ignore[no-redef]
+    from src.client.logseq_client import LogseqClient  # type: ignore[no-redef]
+    from src.logging_setup import setup_logging  # type: ignore[no-redef]
+    from src.registry import register_all_tools  # type: ignore[no-redef]
 
 
 setup_logging()

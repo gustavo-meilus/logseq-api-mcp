@@ -21,7 +21,12 @@
 
 **Step 1 — Install**
 
+Install as a Python package or run from source.
 ```bash
+# Install as a package with uv
+uv tool install git+https://github.com/gustavo-meilus/logseq-api-mcp.git
+
+# Run from source (development)
 git clone https://github.com/gustavo-meilus/logseq-api-mcp.git
 cd logseq-api-mcp
 uv sync
@@ -29,6 +34,7 @@ uv sync
 
 **Step 2 — Configure**
 
+Optional, only if you installed from source. Otherwise add env vars to config in step 3.
 ```bash
 cp .env.template .env
 # open .env and set LOGSEQ_API_ENDPOINT and LOGSEQ_API_TOKEN
@@ -38,13 +44,30 @@ Getting your token: open Logseq, go to **Settings → Features → Developer mod
 
 **Step 3 — Connect**
 
+If installed from package:
+```jsonc
+// ~/.claude/claude_desktop_config.json
+{
+  "mcpServers": {
+    "logseq-api": {
+      "command": "logseq-api-mcp",
+      "env": {
+        "LOGSEQ_API_ENDPOINT": "http://127.0.0.1:12315/api",
+        "LOGSEQ_API_TOKEN": "your_token_here"
+      }
+    }
+  }
+}
+```
+
+If installed from source:
 ```jsonc
 // ~/.claude/claude_desktop_config.json
 {
   "mcpServers": {
     "logseq-api": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/logseq-api-mcp", "python", "src/server.py"],
+      "args": ["run", "--directory", "/path/to/logseq-api-mcp", "logseq-api-mcp"],
       "env": {
         "LOGSEQ_API_ENDPOINT": "http://127.0.0.1:12315/api",
         "LOGSEQ_API_TOKEN": "your_token_here"
